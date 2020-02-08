@@ -1,0 +1,5 @@
+﻿  uic WCSSimulator.ui
+  WCSSimulator.cpp
+  main.cpp
+  moc_WCSSimulator.cpp
+  WCSSimulator.vcxproj -> H:\Project\Qt\ShenYangQuickHigh\Source\x64\Debug\WCSSimulator.exe
