@@ -80,6 +80,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Discharger.cpp" />
     <ClCompile Include="DischargerForm.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="OrderForm.cpp" />
@@ -116,6 +117,9 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="OrderForm.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="Discharger.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

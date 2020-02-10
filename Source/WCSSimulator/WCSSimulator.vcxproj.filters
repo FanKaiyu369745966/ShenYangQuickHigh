@@ -46,6 +46,9 @@
     <ClCompile Include="OrderForm.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Discharger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="WCSSimulator.h">
@@ -64,6 +67,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="OrderForm.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="Discharger.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
