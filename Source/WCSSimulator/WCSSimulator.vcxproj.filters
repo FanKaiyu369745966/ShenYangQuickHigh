@@ -31,14 +31,59 @@
     <ClCompile Include="WCSSimulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ServerForm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DischargerForm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SortTableForm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShipmentPortForm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OrderForm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="WCSSimulator.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="ServerForm.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="DischargerForm.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="SortTableForm.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="ShipmentPortForm.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="OrderForm.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="WCSSimulator.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="ServerForm.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="SortTableForm.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="DischargerForm.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="ShipmentPortForm.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="OrderForm.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>

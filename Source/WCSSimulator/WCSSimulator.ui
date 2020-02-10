@@ -20,8 +20,8 @@
    <string>WCSSimulator</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QGridLayout" name="gridLayout_2">
-    <item row="0" column="0">
+   <layout class="QVBoxLayout" name="verticalLayout_5">
+    <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QLabel" name="label">
@@ -49,68 +49,7 @@
       </item>
      </layout>
     </item>
-    <item row="2" column="0">
-     <widget class="QGroupBox" name="groupBox_4">
-      <property name="title">
-       <string>订单信息</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_4">
-       <item>
-        <widget class="QTableWidget" name="tableWidget_4">
-         <column>
-          <property name="text">
-           <string>订单号</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>托盘码</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>分盘机</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>分拣台</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>出货口</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>执行者</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>状态</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>下单时间</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>完成时间</string>
-          </property>
-         </column>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item row="1" column="0">
+    <item>
      <layout class="QGridLayout" name="gridLayout" columnstretch="2,0,0,0">
       <item row="0" column="3">
        <widget class="QGroupBox" name="groupBox_3">
@@ -206,6 +145,67 @@
        </widget>
       </item>
      </layout>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="groupBox_4">
+      <property name="title">
+       <string>订单信息</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <widget class="QTableWidget" name="tableWidget_4">
+         <column>
+          <property name="text">
+           <string>订单号</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>托盘码</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>分盘机</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>分拣台</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>出货口</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>执行者</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>状态</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>下单时间</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>完成时间</string>
+          </property>
+         </column>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </item>
    </layout>
   </widget>

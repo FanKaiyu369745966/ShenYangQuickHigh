@@ -1,0 +1,23 @@
+<UI version="4.0" >
+ <class>DischargerFrom</class>
+ <widget class="QWidget" name="DischargerFrom" >
+  <property name="objectName" >
+   <string notr="true">DischargerFrom</string>
+  </property>
+  <property name="geometry" >
+   <rect>
+	<x>0</x>
+	<y>0</y>
+	<width>400</width>
+	<height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>DischargerFrom</string>
+  </property>
+ </widget>
+ <layoutDefault spacing="6" margin="11" />
+ <pixmapfunction></pixmapfunction>
+ <resources/>
+ <connections/>
+</UI>
