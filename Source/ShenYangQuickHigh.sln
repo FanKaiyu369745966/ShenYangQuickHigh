@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "QIAGVSSService", "QIAGVSSSe
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "AppSetup", "Setup\AppSetup\AppSetup.vdproj", "{C5A9798B-B4DF-4CD1-8471-4DE45C9545E1}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WCSSimulator", "WCSSimulator\WCSSimulator.vcxproj", "{6C690953-5D0E-43A0-9ED8-94CBD053D40F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -27,6 +29,10 @@ Global
 		{C5A9798B-B4DF-4CD1-8471-4DE45C9545E1}.Debug|x64.Build.0 = Debug
 		{C5A9798B-B4DF-4CD1-8471-4DE45C9545E1}.Release|x64.ActiveCfg = Release
 		{C5A9798B-B4DF-4CD1-8471-4DE45C9545E1}.Release|x64.Build.0 = Release
+		{6C690953-5D0E-43A0-9ED8-94CBD053D40F}.Debug|x64.ActiveCfg = Debug|x64
+		{6C690953-5D0E-43A0-9ED8-94CBD053D40F}.Debug|x64.Build.0 = Debug|x64
+		{6C690953-5D0E-43A0-9ED8-94CBD053D40F}.Release|x64.ActiveCfg = Release|x64
+		{6C690953-5D0E-43A0-9ED8-94CBD053D40F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
