@@ -5,6 +5,7 @@
 #include <QLineEdit>
 #include <QComboBox>
 #include <QPushButton>
+#include <QCheckBox>
 #include <QTableWidget>
 #include <QStandardItemModel>
 
@@ -21,7 +22,7 @@ DischargerForm::~DischargerForm()
 
 void DischargerForm::Initialize()
 {
-	QPushButton* _pbutAdd = new QPushButton(QString::fromLocal8Bit("添加"), this);		/*!< 添加按钮 */
+	QPushButton* _pbutAdd = new QPushButton(QString::fromLocal8Bit("添加"), this);			/*!< 添加按钮 */
 	QPushButton* _pbutEdit = new QPushButton(QString::fromLocal8Bit("修改"), this);			/*!< 编辑按钮 */
 	QPushButton* _pbutDel = new QPushButton(QString::fromLocal8Bit("删除"), this);			/*!< 删除按钮 */
 	QLabel* _labNo = new QLabel(QString::fromLocal8Bit("序号："), this);					/*!< 序号标签 */
@@ -30,6 +31,7 @@ void DischargerForm::Initialize()
 	QLineEdit* _leditNo = new QLineEdit(this);												/*!< 序号编辑框 */
 	QLineEdit* _leditAddr = new QLineEdit(this);											/*!< 地址编辑框 */
 	//QComboBox* _combStatus = new QComboBox(this);											/*!< 状态下拉列表 */
+	QCheckBox* _checkClient = new QCheckBox(QString::fromLocal8Bit("客户端"), this);		/*!< 客户端模式单选按钮 */
 
 	QTableView* _table = new QTableView(this);												/*!< 表单控件 */
 
@@ -41,6 +43,7 @@ void DischargerForm::Initialize()
 	_hlay->addWidget(_leditNo);
 	_hlay->addWidget(_labAddr);
 	_hlay->addWidget(_leditAddr);
+	_hlay->addWidget(_checkClient);
 	_hlay->addWidget(_pbutAdd);
 	_hlay->addWidget(_pbutEdit);
 	_hlay->addWidget(_pbutDel);
@@ -59,9 +62,10 @@ void DischargerForm::Initialize()
 	// 为模板设置列头
 	int _index = 0;
 	// 为分盘机模板设置列头
-	_model->setColumnCount(4);
+	_model->setColumnCount(5);
 	_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("序号"));
 	_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("地址"));
+	_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("模式"));
 	_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("连接"));
 	_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("状态"));
 

@@ -1,7 +1,9 @@
-#include "WCSSimulator.h"
+﻿#include "WCSSimulator.h"
 #include <QtWidgets/QApplication>
+#include <QHostAddress>
+#include <QDebug>
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 	QApplication a(argc, argv);
 	WCSSimulator w;

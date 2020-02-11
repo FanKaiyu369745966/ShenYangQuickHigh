@@ -2,10 +2,26 @@
 
 #include <cstdio>
 #include <QDebug>
+#include <QHostAddress>
 
-Discharger::Discharger(const quint8& no, QObject* parent)
+Discharger::Discharger(const quint8& no, const QString& addr, bool client, QObject* parent)
 	: QObject(parent)
 	, m_no(no)
+	, m_socket(nullptr)
+	, m_status(NotReady)
+	, m_client(client)
+{
+	SetAddress(addr);
+}
+
+Discharger::Discharger(const quint8& no, const QString& addr, const quint16& port, bool client, QObject* parent)
+	: QObject(parent)
+	, m_no(no)
+	, m_socket(nullptr)
+	, m_status(NotReady)
+	, m_addr(addr)
+	, m_port(port)
+	, m_client(client)
 {
 }
 
@@ -135,7 +151,7 @@ void Discharger::Answer(const QByteArrayList& list)
 			// 更新分盘机状态
 			m_status = _param;
 
-			emit UpdateStatus();
+			emit Update();
 			break;
 		}
 		case 0x2F:
@@ -184,6 +200,109 @@ QString Discharger::status(const quint8& status)
 	}
 
 	return QString("");
+}
+
+void Discharger::SetAddress(const QString& addr)
+{
+	QStringList _list = addr.split(':');
+
+	QString _addr(addr.section(':', 0, -2));
+	quint16 _port = static_cast<quint16>(addr.section(':', -1, -1).toUInt());
+
+	QHostAddress _host;
+
+	if (_host.setAddress(_addr) == false)
+	{
+		return;
+	}
+
+	m_addr = _addr;
+	m_port = _port;
+
+	if (m_socket)
+	{
+		m_socket->close();
+	}
+
+	return;
+}
+
+void Discharger::SetAddress(const QString& addr, const quint16& port)
+{
+	QHostAddress _host;
+
+	if (_host.setAddress(addr) == false)
+	{
+		return;
+	}
+
+	m_addr = addr;
+	m_port = port;
+
+	if (m_socket)
+	{
+		m_socket->close();
+	}
+
+	return;
+}
+
+void Discharger::GetAddress(QString& addr, quint16& port) const
+{
+	addr = m_addr;
+	port = m_port;
+
+	return;
+}
+
+QString Discharger::GetAddress() const
+{
+	return QString("%1:%2").arg(m_addr).arg(m_port);
+}
+
+void Discharger::SetMode(const bool& client)
+{
+	m_client = client;
+
+	if (m_socket)
+	{
+		m_socket->close();
+	}
+
+	if (!m_client)
+	{
+		// TODO 开启服务端轮询连接线程
+	}
+	else
+	{
+		// TODO 关闭服务端轮询连接线程
+	}
+
+	return;
+}
+
+bool Discharger::IsConnected() const
+{
+	if (m_socket == nullptr)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void Discharger::slotDisconnected()
+{
+	if (!m_client)
+	{
+		m_socket->deleteLater();
+	}
+
+	m_socket = nullptr;
+
+	emit Update();
+
+	return;
 }
 
 void Discharger::slotRead()
