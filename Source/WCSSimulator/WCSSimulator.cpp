@@ -2,9 +2,16 @@
 
 #include <QLayout>
 #include <QGroupBox>
+#include <QDir>
+#include <QMessageBox>
+#include <chrono>
+#include <ctime>
+#include <QCloseEvent>
 
 WCSSimulator::WCSSimulator(QWidget* parent)
 	: QMainWindow(parent)
+	, m_wServer(nullptr)
+	, m_server(nullptr)
 {
 	//ui.setupUi(this);
 	Initialize();
@@ -12,8 +19,12 @@ WCSSimulator::WCSSimulator(QWidget* parent)
 
 void WCSSimulator::Initialize()
 {
+	// TODO 读取配置信息
+
+	// 初始化子控件
+
 	QWidget* _wMain = new QWidget(this);													/*!< 主窗口中心控件 */
-	ServerForm* _wServer = new ServerForm(_wMain);											/*!< 服务端控件 */
+	m_wServer = new ServerForm("", _wMain);													/*!< 服务端控件 */
 	DischargerForm* _wDischarger = new DischargerForm(_wMain);								/*!< 分盘机控件 */
 	SortTableForm* _wSortTable = new SortTableForm(_wMain);									/*!< 分拣台控件 */
 	ShipmentPortForm* _wShipment = new ShipmentPortForm(_wMain);							/*!< 出货口控件 */
@@ -38,7 +49,7 @@ void WCSSimulator::Initialize()
 	QVBoxLayout* _layMain = new QVBoxLayout();												/*!< 主窗口全局布局 */
 
 	// 为分组框布局添加控件
-	_layGroupServer->addWidget(_wServer);
+	_layGroupServer->addWidget(m_wServer);
 	_layGroupDischarger->addWidget(_wDischarger);
 	_layGroupSort->addWidget(_wSortTable);
 	_layGroupShipment->addWidget(_wShipment);
@@ -87,5 +98,304 @@ void WCSSimulator::Initialize()
 	//_groupShipment->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 	//_groupOrder->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 
+	// 为控件添加信号和槽函数
+	QObject::connect(m_wServer, &ServerForm::signalListen, this, &WCSSimulator::slotStartListen);
+	QObject::connect(m_wServer, &ServerForm::signalClose, this, &WCSSimulator::slotEndListen);
+	QObject::connect(m_wServer, &ServerForm::signalEditFinished, this, &WCSSimulator::slotSrvEditFinished);
+
+	// 创建子目录
+	QDir _dir(".");
+	QDir _dirLog("Log");
+	QDir _dirConfig("Config");
+
+	// 创建日志存放目录
+	if (_dirLog.exists() == false)
+	{
+		_dir.mkdir("Log");
+	}
+
+	// 创建配置存放目录
+	if (_dirConfig.exists() == false)
+	{
+		_dir.mkdir("Config");
+	}
+
+	// 创建服务端log文件
+	QFile _fileSrvLog("Log/Server.log");
+
+	// 保留文件中的数据并打开文件
+	//if (_fileSrvLog.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::OpenModeFlag::Append))
+
+	// 清空文件中的数据，若没有文件，则创建文件 并打开文件
+	if (_fileSrvLog.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		_fileSrvLog.close();
+	}
+
+	// 创建服务端
+	m_server = new QTcpServer(this);
+
+	// 为服务端添加信号和槽函数
+	QObject::connect(m_server, &QTcpServer::acceptError, this, &WCSSimulator::slotSrvAcceptError);
+	QObject::connect(m_server, &QTcpServer::newConnection, this, &WCSSimulator::slotNewConnection);
+
 	return;
+}
+
+QString WCSSimulator::GetCurrentTime()
+{
+	using namespace std;
+
+	chrono::system_clock::time_point tpCur = chrono::system_clock::now();
+
+	time_t tt = chrono::system_clock::to_time_t(tpCur);
+	tm* t = localtime(&tt);
+
+	auto timeNow = chrono::duration_cast<chrono::milliseconds>(tpCur.time_since_epoch());
+
+	QString str = QString("%1/%2/%3 %4:%5:%6")
+		.arg(t->tm_year + 1900, 4, 10, QLatin1Char('0'))
+		.arg(t->tm_mon + 1, 2, 10, QLatin1Char('0'))
+		.arg(t->tm_mday, 2, 10, QLatin1Char('0'))
+		.arg(t->tm_hour, 2, 10, QLatin1Char('0'))
+		.arg(t->tm_min, 2, 10, QLatin1Char('0'))
+		.arg(t->tm_sec, 2, 10, QLatin1Char('0'));
+
+	return str;
+}
+
+void WCSSimulator::closeEvent(QCloseEvent* event)
+{
+	slotSave();
+	event->accept();
+
+	return;
+}
+
+void WCSSimulator::slotStartListen(bool& listened)
+{
+	QString _curTime = GetCurrentTime();
+
+	QFile _fileSrvLog("Log/Server.log");
+
+	_fileSrvLog.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::OpenModeFlag::Append);
+
+	//_fileSrvLog.(SEEK_END);
+
+	QTextStream _out(&_fileSrvLog);
+
+	QString _addr(m_wServer->m_addr.section(':', 0, -2));
+	quint16 _port = static_cast<quint16>(m_wServer->m_addr.section(':', -1, -1).toUInt());
+
+	QHostAddress _host;
+
+	if (_host.setAddress(_addr) == false || _port == 0)
+	{
+		listened = false;
+
+		QMessageBox::critical(this, QString::fromLocal8Bit("服务端监听"), QString::fromLocal8Bit("监听启动失败！无效的地址信息"));
+
+		_out << QString::fromLocal8Bit("%1 监听启动失败！无效的地址信息").arg(_curTime) << endl;
+
+		_fileSrvLog.close();
+
+		return;
+	}
+
+	if (m_server == nullptr)
+	{
+		m_server = new QTcpServer(this);
+
+		QObject::connect(m_server, &QTcpServer::acceptError, this, &WCSSimulator::slotSrvAcceptError);
+		QObject::connect(m_server, &QTcpServer::newConnection, this, &WCSSimulator::slotNewConnection);
+	}
+
+	if (m_server->isListening())
+	{
+		if (m_server->serverAddress().toString() == _addr && m_server->serverPort() == _port)
+		{
+			listened = true;
+
+			return;
+		}
+
+		m_server->close();
+	}
+
+	listened = m_server->listen(_host, _port);
+
+	// 向服务端日志中填写日志
+	if (listened)
+	{
+		_out << QString::fromLocal8Bit("%1 监听启动").arg(_curTime) << endl;
+	}
+	else
+	{
+		_out << QString::fromLocal8Bit("%1 监听启动失败：").arg(_curTime) << m_server->errorString() << endl;
+	}
+
+	_fileSrvLog.close();
+
+	return;
+}
+
+void WCSSimulator::slotEndListen()
+{
+	QString _curTime = GetCurrentTime();
+
+	QFile _fileSrvLog("Log/Server.log");
+
+	_fileSrvLog.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::OpenModeFlag::Append);
+
+	//_fileSrvLog.seek(SEEK_END);
+
+	QTextStream _out(&_fileSrvLog);
+
+	if (m_server == nullptr)
+	{
+		_fileSrvLog.close();
+
+		return;
+	}
+
+	if (m_server->isListening())
+	{
+		m_server->close();
+
+		_out << QString::fromLocal8Bit("%1 监听关闭").arg(_curTime) << endl;
+	}
+
+	_fileSrvLog.close();
+
+	return;
+}
+
+void WCSSimulator::slotSrvEditFinished(QString addr)
+{
+	QString _curTime = GetCurrentTime();
+
+	QFile _fileSrvLog("Log/Server.log");
+
+	_fileSrvLog.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::OpenModeFlag::Append);
+
+	//_fileSrvLog.seek(SEEK_END);
+
+	QTextStream _out(&_fileSrvLog);
+
+	_out << QString::fromLocal8Bit("%1 修改地址信息为：[%2]").arg(_curTime).arg(addr) << endl;
+
+	_fileSrvLog.close();
+
+	return;
+
+}
+
+void WCSSimulator::slotNewConnection()
+{
+	QString _curTime = GetCurrentTime();
+
+	QFile _fileSrvLog("Log/Server.log");
+
+	_fileSrvLog.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::OpenModeFlag::Append);
+
+	//_fileSrvLog.(SEEK_END);
+
+	QTextStream _out(&_fileSrvLog);
+
+	while (m_server->hasPendingConnections())
+	{
+		QTcpSocket* _socket = m_server->nextPendingConnection();
+
+		_out << QString::fromLocal8Bit("%1 连线客户端：[%2:%3]").arg(_curTime).arg(_socket->peerAddress().toString()).arg(_socket->peerPort()) << endl;
+
+		// TODO 连接分盘机
+
+		_out << QString::fromLocal8Bit("%1 客户端：[%2:%3]离线").arg(_curTime).arg(_socket->peerAddress().toString()).arg(_socket->peerPort()) << endl;
+
+		_socket->close();
+	}
+
+	_fileSrvLog.close();
+
+	return;
+}
+
+void WCSSimulator::slotSrvAcceptError(QAbstractSocket::SocketError error)
+{
+	QString _curTime = GetCurrentTime();
+
+	QFile _fileSrvLog("Log/Server.log");
+
+	_fileSrvLog.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::OpenModeFlag::Append);
+
+	//_fileSrvLog.(SEEK_END);
+
+	QTextStream _out(&_fileSrvLog);
+
+	_out << QString::fromLocal8Bit("%1 异常：%2").arg(_curTime).arg(m_server->errorString()) << endl;
+
+	_fileSrvLog.close();
+
+	if (m_wServer->m_listened)
+	{
+		m_wServer->slotReleaseListenButton();
+	}
+
+	switch (error)
+	{
+	case QAbstractSocket::ConnectionRefusedError:
+		break;
+	case QAbstractSocket::RemoteHostClosedError:
+		break;
+	case QAbstractSocket::HostNotFoundError:
+		break;
+	case QAbstractSocket::SocketAccessError:
+		break;
+	case QAbstractSocket::SocketResourceError:
+		break;
+	case QAbstractSocket::SocketTimeoutError:
+		break;
+	case QAbstractSocket::DatagramTooLargeError:
+		break;
+	case QAbstractSocket::NetworkError:
+		break;
+	case QAbstractSocket::AddressInUseError:
+		break;
+	case QAbstractSocket::SocketAddressNotAvailableError:
+		break;
+	case QAbstractSocket::UnsupportedSocketOperationError:
+		break;
+	case QAbstractSocket::UnfinishedSocketOperationError:
+		break;
+	case QAbstractSocket::ProxyAuthenticationRequiredError:
+		break;
+	case QAbstractSocket::SslHandshakeFailedError:
+		break;
+	case QAbstractSocket::ProxyConnectionRefusedError:
+		break;
+	case QAbstractSocket::ProxyConnectionClosedError:
+		break;
+	case QAbstractSocket::ProxyConnectionTimeoutError:
+		break;
+	case QAbstractSocket::ProxyNotFoundError:
+		break;
+	case QAbstractSocket::ProxyProtocolError:
+		break;
+	case QAbstractSocket::OperationError:
+		break;
+	case QAbstractSocket::SslInternalError:
+		break;
+	case QAbstractSocket::SslInvalidUserDataError:
+		break;
+	case QAbstractSocket::TemporaryError:
+		break;
+	case QAbstractSocket::UnknownSocketError:
+		break;
+	}
+
+	return;
+}
+
+void WCSSimulator::slotSave()
+{
 }

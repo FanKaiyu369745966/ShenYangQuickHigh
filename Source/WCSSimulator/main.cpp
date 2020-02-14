@@ -9,7 +9,5 @@ int main(int argc, char* argv[])
 	WCSSimulator w;
 	w.show();
 
-	Discharger tmp(1, "127.0.0.1:10086", false);
-
 	return a.exec();
 }

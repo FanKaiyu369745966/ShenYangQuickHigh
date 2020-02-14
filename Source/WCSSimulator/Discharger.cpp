@@ -251,8 +251,6 @@ QString Discharger::status(const quint8& status)
 
 void Discharger::SetAddress(const QString& addr)
 {
-	QStringList _list = addr.split(':');
-
 	QString _addr(addr.section(':', 0, -2));
 	quint16 _port = static_cast<quint16>(addr.section(':', -1, -1).toUInt());
 
