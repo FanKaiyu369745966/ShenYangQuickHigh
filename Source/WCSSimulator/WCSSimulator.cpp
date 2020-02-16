@@ -7,10 +7,13 @@
 #include <chrono>
 #include <ctime>
 #include <QCloseEvent>
+#include <QJsonObject>
+#include <QJsonDocument>
 
 WCSSimulator::WCSSimulator(QWidget* parent)
 	: QMainWindow(parent)
 	, m_wServer(nullptr)
+	, m_wDatabase(nullptr)
 	, m_server(nullptr)
 {
 	//ui.setupUi(this);
@@ -21,15 +24,38 @@ void WCSSimulator::Initialize()
 {
 	// TODO 读取配置信息
 
+	// 读取服务端配置
+	QString _srvAddr = "", _dbHost = "", _dbName = "", _dbUser = "", _dbPwd = "";
+
+	QFile _fileSrvConfig("Config/Config.ini");
+
+	// 清空文件中的数据，若没有文件，则创建文件 并打开文件
+	if (_fileSrvConfig.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		QJsonDocument _jdoc = QJsonDocument::fromJson(_fileSrvConfig.readAll());
+		QJsonObject _jobjRoot = _jdoc.object();
+
+		QJsonObject _jobjSrv = _jobjRoot.value("Server").toObject();
+		QJsonObject _jobjDb = _jobjRoot.value("Database").toObject();
+
+		_srvAddr = _jobjSrv.value("Address").toString();
+		_dbHost = _jobjDb.value("Host").toString();
+		_dbName = _jobjDb.value("DatabaseName").toString();
+		_dbUser = _jobjDb.value("User").toString();
+		_dbPwd = _jobjDb.value("Password").toString();
+	}
+
 	// 初始化子控件
 
 	QWidget* _wMain = new QWidget(this);													/*!< 主窗口中心控件 */
-	m_wServer = new ServerForm("", _wMain);													/*!< 服务端控件 */
+	m_wDatabase = new DatabaseForm(_dbHost, _dbName, _dbUser, _dbPwd, _wMain);									/*!< 数据库控件 */
+	m_wServer = new ServerForm(_srvAddr, _wMain);											/*!< 服务端控件 */
 	DischargerForm* _wDischarger = new DischargerForm(_wMain);								/*!< 分盘机控件 */
 	SortTableForm* _wSortTable = new SortTableForm(_wMain);									/*!< 分拣台控件 */
 	ShipmentPortForm* _wShipment = new ShipmentPortForm(_wMain);							/*!< 出货口控件 */
 	OrderForm* _wOrder = new OrderForm(_wMain);												/*!< 订单详情控件 */
 
+	QGroupBox* _groupDatabase = new QGroupBox(QString::fromLocal8Bit("数据库"), this);		/*!< 数据库分组框 */
 	QGroupBox* _groupServer = new QGroupBox(QString::fromLocal8Bit("服务端"), this);		/*!< 服务端分组框 */
 	QGroupBox* _groupDischarger = new QGroupBox(QString::fromLocal8Bit("分盘机"), this);	/*!< 分盘机分组框 */
 	QGroupBox* _groupSort = new QGroupBox(QString::fromLocal8Bit("分拣台"), this);			/*!< 分拣台分组框 */
@@ -38,6 +64,7 @@ void WCSSimulator::Initialize()
 
 	//QTableView* _tableOrder = new QTableView(this);											/*!< 订单详情表单控件 */
 
+	QHBoxLayout* _layGroupDatabase = new QHBoxLayout();										/*!< 数据库分组框布局 */
 	QHBoxLayout* _layGroupServer = new QHBoxLayout();										/*!< 服务端分组框布局 */
 	QHBoxLayout* _layGroupDischarger = new QHBoxLayout();									/*!< 分盘机分组框布局 */
 	QHBoxLayout* _layGroupSort = new QHBoxLayout();											/*!< 分拣台分组框布局 */
@@ -49,6 +76,7 @@ void WCSSimulator::Initialize()
 	QVBoxLayout* _layMain = new QVBoxLayout();												/*!< 主窗口全局布局 */
 
 	// 为分组框布局添加控件
+	_layGroupDatabase->addWidget(m_wDatabase);
 	_layGroupServer->addWidget(m_wServer);
 	_layGroupDischarger->addWidget(_wDischarger);
 	_layGroupSort->addWidget(_wSortTable);
@@ -56,6 +84,7 @@ void WCSSimulator::Initialize()
 	_layGroupOrder->addWidget(_wOrder);
 
 	// 为分组框添加布局
+	_groupDatabase->setLayout(_layGroupDatabase);
 	_groupServer->setLayout(_layGroupServer);
 	_groupDischarger->setLayout(_layGroupDischarger);
 	_groupSort->setLayout(_layGroupSort);
@@ -75,6 +104,7 @@ void WCSSimulator::Initialize()
 
 	// 为主窗口布局添加控件
 	// 添加服务端属性配置控件
+	_layMain->addWidget(_groupDatabase);
 	_layMain->addWidget(_groupServer);
 	_layMain->addLayout(_layGroup);
 	_layMain->addWidget(_groupOrder);
@@ -398,4 +428,29 @@ void WCSSimulator::slotSrvAcceptError(QAbstractSocket::SocketError error)
 
 void WCSSimulator::slotSave()
 {
+	// TODO 储存配置信息
+
+	// 储存服务端配置
+	QJsonObject	_jobjRoot, _jobjSrv, _jobjDb;
+
+	_jobjSrv.insert("Address", m_wServer->m_addr);
+
+	_jobjDb.insert("Host", m_wDatabase->m_strHost);
+	_jobjDb.insert("DatabaseName", m_wDatabase->m_strDbName);
+	_jobjDb.insert("User", m_wDatabase->m_strUser);
+	_jobjDb.insert("Password", m_wDatabase->m_strPassword);
+
+	_jobjRoot.insert("Server", _jobjSrv);
+	_jobjRoot.insert("Database", _jobjDb);
+
+	// 创建服务端配置文件
+	QFile _fileSrvConfig("Config/Config.ini");
+
+	// 清空文件中的数据，若没有文件，则创建文件 并打开文件
+	if (_fileSrvConfig.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		_fileSrvConfig.write(QJsonDocument(_jobjRoot).toJson());
+	}
+
+	return;
 }

@@ -80,6 +80,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DatabaseForm.cpp" />
     <ClCompile Include="Discharger.cpp" />
     <ClCompile Include="DischargerForm.cpp" />
     <ClCompile Include="main.cpp" />
@@ -93,6 +94,7 @@
     <QtMoc Include="WCSSimulator.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtUic Include="DatabaseForm.ui" />
     <QtUic Include="DischargerForm.ui" />
     <QtUic Include="OrderForm.ui" />
     <QtUic Include="ServerForm.ui" />
@@ -120,6 +122,9 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Discharger.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="DatabaseForm.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

@@ -49,6 +49,9 @@
     <ClCompile Include="Discharger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DatabaseForm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="WCSSimulator.h">
@@ -72,6 +75,9 @@
     <QtMoc Include="Discharger.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="DatabaseForm.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="WCSSimulator.ui">
@@ -90,6 +96,9 @@
       <Filter>Form Files</Filter>
     </QtUic>
     <QtUic Include="OrderForm.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="DatabaseForm.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>

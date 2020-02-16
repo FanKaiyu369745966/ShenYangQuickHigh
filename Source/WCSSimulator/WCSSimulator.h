@@ -2,12 +2,14 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QTcpServer>
+#include <QSqlDatabase>
 #include <QFile>
 #include "ServerForm.h"
 #include "DischargerForm.h"
 #include "SortTableForm.h"
 #include "ShipmentPortForm.h"
 #include "OrderForm.h"
+#include "DatabaseForm.h"
 #include "Discharger.h"
 //#include "ui_WCSSimulator.h"
 
@@ -25,6 +27,7 @@ private:
 
 private:
 	QTcpServer* m_server;
+	DatabaseForm* m_wDatabase;
 
 private:
 	/*!
