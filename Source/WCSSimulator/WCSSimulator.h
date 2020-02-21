@@ -24,11 +24,10 @@ private:
 	//Ui::WCSSimulatorClass ui;
 private:
 	ServerForm* m_wServer;
-
+	DatabaseForm* m_wDatabase;
 private:
 	QTcpServer* m_server;
-	DatabaseForm* m_wDatabase;
-
+	QSqlDatabase m_database;
 private:
 	/*!
 	 * @brief 初始化主窗口
@@ -105,4 +104,21 @@ private slots:
 	 * 将配置信心转换为JSON格式并写入文档
 	 */
 	void slotSave();
+
+	/*!
+	 * @brief 连接数据库
+	 * @arg bool
+	 * @return void
+	 * @since 2020/2/16 FanKaiyu
+	 * 创建数据库表，读取数据库信息。
+	 */
+	void slotLinkDatabase(bool&);
+
+	/*!
+	 * @brief 关闭数据库
+	 * @return void
+	 * @since 2020/2/16 FanKaiyu
+	 * 终端与数据库的连接
+	 */
+	void slotCloseDatabase();
 };

@@ -76,7 +76,7 @@ QByteArrayList Discharger::Process(QByteArray& data)
 
 	QByteArrayList _list;		/*!< 报文列表 */
 
-	const quint8 _pkgHead = 0x8E/*!< 报文头 */, const _pkgTail = 0x8F/*!< 报文尾 */;
+	const quint8 _pkgHead = 0x8E/*!< 报文头 */, _pkgTail = 0x8F/*!< 报文尾 */;
 
 	quint8* _result = _data;		/*!< 数据头 */
 	int _size = _length;			/*!< 数据长度 */

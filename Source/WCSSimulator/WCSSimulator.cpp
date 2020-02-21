@@ -9,12 +9,15 @@
 #include <QCloseEvent>
 #include <QJsonObject>
 #include <QJsonDocument>
+#include <QSqlError>
+#include <QSqlQuery>
 
 WCSSimulator::WCSSimulator(QWidget* parent)
 	: QMainWindow(parent)
 	, m_wServer(nullptr)
 	, m_wDatabase(nullptr)
 	, m_server(nullptr)
+	, m_database(QSqlDatabase::addDatabase("QODBC3", "main"))
 {
 	//ui.setupUi(this);
 	Initialize();
@@ -22,9 +25,7 @@ WCSSimulator::WCSSimulator(QWidget* parent)
 
 void WCSSimulator::Initialize()
 {
-	// TODO 读取配置信息
-
-	// 读取服务端配置
+	// 读取配置信息
 	QString _srvAddr = "", _dbHost = "", _dbName = "", _dbUser = "", _dbPwd = "";
 
 	QFile _fileSrvConfig("Config/Config.ini");
@@ -48,7 +49,7 @@ void WCSSimulator::Initialize()
 	// 初始化子控件
 
 	QWidget* _wMain = new QWidget(this);													/*!< 主窗口中心控件 */
-	m_wDatabase = new DatabaseForm(_dbHost, _dbName, _dbUser, _dbPwd, _wMain);									/*!< 数据库控件 */
+	m_wDatabase = new DatabaseForm(_dbHost, _dbName, _dbUser, _dbPwd, _wMain);				/*!< 数据库控件 */
 	m_wServer = new ServerForm(_srvAddr, _wMain);											/*!< 服务端控件 */
 	DischargerForm* _wDischarger = new DischargerForm(_wMain);								/*!< 分盘机控件 */
 	SortTableForm* _wSortTable = new SortTableForm(_wMain);									/*!< 分拣台控件 */
@@ -131,7 +132,8 @@ void WCSSimulator::Initialize()
 	// 为控件添加信号和槽函数
 	QObject::connect(m_wServer, &ServerForm::signalListen, this, &WCSSimulator::slotStartListen);
 	QObject::connect(m_wServer, &ServerForm::signalClose, this, &WCSSimulator::slotEndListen);
-	QObject::connect(m_wServer, &ServerForm::signalEditFinished, this, &WCSSimulator::slotSrvEditFinished);
+	QObject::connect(m_wDatabase, &DatabaseForm::OnButtonLink, this, &WCSSimulator::slotLinkDatabase);
+	QObject::connect(m_wDatabase, &DatabaseForm::OnButtonClose, this, &WCSSimulator::slotCloseDatabase);
 
 	// 创建子目录
 	QDir _dir(".");
@@ -167,6 +169,7 @@ void WCSSimulator::Initialize()
 
 	// 为服务端添加信号和槽函数
 	QObject::connect(m_server, &QTcpServer::acceptError, this, &WCSSimulator::slotSrvAcceptError);
+	QObject::connect(m_server, &QTcpServer::newConnection, this, &WCSSimulator::slotNewConnection);
 	QObject::connect(m_server, &QTcpServer::newConnection, this, &WCSSimulator::slotNewConnection);
 
 	return;
@@ -219,7 +222,7 @@ void WCSSimulator::slotStartListen(bool& listened)
 
 	QHostAddress _host;
 
-	if (_host.setAddress(_addr) == false || _port == 0)
+	if (_host.setAddress(_addr) == false || _port == 0 || _port > 65535)
 	{
 		listened = false;
 
@@ -428,9 +431,8 @@ void WCSSimulator::slotSrvAcceptError(QAbstractSocket::SocketError error)
 
 void WCSSimulator::slotSave()
 {
-	// TODO 储存配置信息
+	// 储存配置信息
 
-	// 储存服务端配置
 	QJsonObject	_jobjRoot, _jobjSrv, _jobjDb;
 
 	_jobjSrv.insert("Address", m_wServer->m_addr);
@@ -443,13 +445,61 @@ void WCSSimulator::slotSave()
 	_jobjRoot.insert("Server", _jobjSrv);
 	_jobjRoot.insert("Database", _jobjDb);
 
-	// 创建服务端配置文件
+	// 创建配置文件
 	QFile _fileSrvConfig("Config/Config.ini");
 
 	// 清空文件中的数据，若没有文件，则创建文件 并打开文件
 	if (_fileSrvConfig.open(QIODevice::WriteOnly | QIODevice::Text))
 	{
 		_fileSrvConfig.write(QJsonDocument(_jobjRoot).toJson());
+	}
+
+	return;
+}
+
+void WCSSimulator::slotLinkDatabase(bool& linked)
+{
+	if (m_wDatabase->m_strHost.isNull() || m_wDatabase->m_strHost.isEmpty()
+		|| m_wDatabase->m_strDbName.isNull() || m_wDatabase->m_strDbName.isEmpty()
+		|| m_wDatabase->m_strUser.isNull() || m_wDatabase->m_strUser.isEmpty())
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("数据库连接"), QString::fromLocal8Bit("数据库连接失败！主机名、数据库名称、用户名不能为空"));
+
+		return;
+	}
+
+	if (m_database.isOpen())
+	{
+		m_database.close();
+	}
+
+	m_database.setDatabaseName(QString("DRIVER={SQL SERVER};"
+		"SERVER=%1;"
+		"DATABASE=%2;"
+		"UID=%3;"
+		"PWD=%4;").arg(m_wDatabase->m_strHost).arg(m_wDatabase->m_strDbName).arg(m_wDatabase->m_strUser).arg(m_wDatabase->m_strPassword));
+
+	linked = m_database.open();
+
+	if (linked == false)
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("数据库连接"), QString::fromLocal8Bit("数据库连接失败！%1").arg(m_database.lastError().text()));
+
+		return;
+	}
+
+	// TODO 创建数据库表
+
+	// TODO 读取数据库中的数据
+
+	return;
+}
+
+void WCSSimulator::slotCloseDatabase()
+{
+	if (m_database.isOpen())
+	{
+		m_database.close();
 	}
 
 	return;
