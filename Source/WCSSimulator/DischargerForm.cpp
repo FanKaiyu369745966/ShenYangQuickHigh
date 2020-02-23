@@ -376,7 +376,7 @@ bool DischargerForm::EditDischarger(quint8 no, QString addr, quint16 port, bool 
 			continue;
 		}
 
-		m_model->item(i, 1)->setText(m_strAddr);
+		m_model->item(i, 1)->setText(QString::fromLocal8Bit("%1:%2").arg(addr).arg(port));
 
 		if (client)
 		{
@@ -389,4 +389,80 @@ bool DischargerForm::EditDischarger(quint8 no, QString addr, quint16 port, bool 
 	}
 
 	return true;
+}
+
+void DischargerForm::Update(quint8 no, bool connected)
+{
+	if (no <= 0 || no >= 255)
+	{
+		return;
+	}
+
+	// 修改列表中该编号的分盘机属性
+	for (int i = 0; i < m_model->rowCount(); ++i)
+	{
+		QStandardItem* _aItem = m_model->item(i);
+
+		if (_aItem->text().toInt() != no)
+		{
+			continue;
+		}
+
+		if (connected)
+		{
+			m_model->item(i, 3)->setText(QString::fromLocal8Bit("已连接"));
+		}
+		else
+		{
+			m_model->item(i, 3)->setText(QString::fromLocal8Bit("未连接"));
+		}
+	}
+
+	return;
+}
+
+void DischargerForm::Update(quint8 no, QString status)
+{
+	if (no <= 0 || no >= 255)
+	{
+		return;
+	}
+
+	// 修改列表中该编号的分盘机属性
+	for (int i = 0; i < m_model->rowCount(); ++i)
+	{
+		QStandardItem* _aItem = m_model->item(i);
+
+		if (_aItem->text().toInt() != no)
+		{
+			continue;
+		}
+
+		m_model->item(i, 4)->setText(status);
+	}
+
+	return;
+}
+
+void DischargerForm::Update(quint8 no, quint8 status)
+{
+	if (no <= 0 || no >= 255)
+	{
+		return;
+	}
+
+	// 修改列表中该编号的分盘机属性
+	for (int i = 0; i < m_model->rowCount(); ++i)
+	{
+		QStandardItem* _aItem = m_model->item(i);
+
+		if (_aItem->text().toInt() != no)
+		{
+			continue;
+		}
+
+		m_model->item(i, 4)->setText(Discharger::status(status));
+	}
+
+	return;
 }

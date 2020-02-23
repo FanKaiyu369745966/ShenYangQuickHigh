@@ -146,7 +146,7 @@ public:
 	 * @arg quint8 分盘机编号
 	 * @arg QString 分盘机地址
 	 * @arg bool 分盘机模式
-	 * @return bool
+	 * @return bool 编辑成功返回true,否则返回false
 	 * @since 2020/2/21 FanKaiyu
 	 * 修改列表中分盘机的属性参数
 	 */
@@ -163,4 +163,34 @@ public:
 	 * 修改列表中分盘机的属性参数
 	 */
 	bool EditDischarger(quint8 no, QString addr, quint16 port, bool client);
+
+	/*!
+	 * @brief 更新分盘机状态
+	 * @arg quint8 分盘机编号
+	 * @arg bool 分盘机的连接状态
+	 * @return void
+	 * @since 2020/2/23 FanKaiyu
+	 * 更新分盘机的连接状态
+	 */
+	void Update(quint8 no, bool connected);
+
+	/*!
+	 * @brief 更新分盘机的状态
+	 * @arg quint8 分盘机编号
+	 * @arg QString 分盘机的状态信息
+	 * @return void
+	 * @since 2020/2/23 FanKaiyu
+	 * 更新分盘机的状态
+	 */
+	void Update(quint8 no, QString status);
+
+	/*!
+	 * @brief 更新分盘机的状态
+	 * @arg quint8 分盘机编号
+	 * @arg quint8 分盘机的状态码
+	 * @return void
+	 * @since 2020/2/23 FanKaiyu
+	 * 更新分盘机的状态
+	 */
+	void Update(quint8 no, quint8 status);
 };
