@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QDateTime>
 
 OrderForm::OrderForm(QWidget* parent)
 	: QWidget(parent)
@@ -13,10 +14,13 @@ OrderForm::OrderForm(QWidget* parent)
 	, m_pbutDel(nullptr)
 	, m_leditNo(nullptr)
 	, m_leditTary(nullptr)
+	, m_table(nullptr)
 	, m_model(nullptr)
 	, m_strOrder("")
 	, m_strTray("")
 	, m_byShipmentPort(0)
+	, m_database(QSqlDatabase::addDatabase("QODBC3", "Order"))
+	, m_bSearch(false)
 {
 	//ui.setupUi(this);
 	Initialize();
@@ -33,16 +37,17 @@ void OrderForm::Initialize()
 	m_pbutDel = new QPushButton(QString::fromLocal8Bit("删除"), this);						/*!< 删除按钮 */
 	QPushButton* _pbutSel = new QPushButton(QString::fromLocal8Bit("选择"), this);			/*!< 选择按钮 */
 	QLabel* _labNo = new QLabel(QString::fromLocal8Bit("订单号："), this);					/*!< 订单号标签 */
-	QLabel* _labTray = new QLabel(QString::fromLocal8Bit("托盘码："), this);				/*!< 托盘码标签 */
-	QLabel* _labSort = new QLabel(QString::fromLocal8Bit("分拣台："), this);				/*!< 分拣台标签 */
-	QLabel* _labShipment = new QLabel(QString::fromLocal8Bit("出货口："), this);			/*!< 出货口标签 */
-	m_leditNo = new QLineEdit(this);														/*!< 订单号编辑框 */
+	QLabel* _labTray = new QLabel(QString::fromLocal8Bit("托盘码："), this);					/*!< 托盘码标签 */
+	QLabel* _labSort = new QLabel(QString::fromLocal8Bit("分拣台："), this);					/*!< 分拣台标签 */
+	QLabel* _labShipment = new QLabel(QString::fromLocal8Bit("出货口："), this);				/*!< 出货口标签 */
+	m_leditNo = new QLineEdit(this);															/*!< 订单号编辑框 */
 	m_leditTary = new QLineEdit(this);														/*!< 托盘码编辑框 */
 	m_leditSort = new QLineEdit(this);														/*!< 分拣台编辑框 */
 	QCheckBox* _cbutAuto = new QCheckBox(QString::fromLocal8Bit("自动生成"), this);			/*!< 自动生成订单号按钮 */
 	m_leditShipment = new QLineEdit(this);													/*!< 出货口编辑框 */
+	QPushButton* _pbutSearch = new QPushButton(QString::fromLocal8Bit("搜索"), this);		/*!< 搜索按钮 */
 
-	QTableView* _table = new QTableView(this);												/*!< 表单控件 */
+	m_table = new QTableView(this);															/*!< 表单控件 */
 
 	QHBoxLayout* _hlay = new QHBoxLayout();													/*!< 水平布局 */
 	QVBoxLayout* _vlay = new QVBoxLayout();													/*!< 垂直布局 */
@@ -59,12 +64,13 @@ void OrderForm::Initialize()
 	_hlay->addWidget(_labShipment);
 	_hlay->addWidget(m_leditShipment);
 
+	_hlay->addWidget(_pbutSearch);
 	_hlay->addWidget(m_pbutAdd);
 	//_hlay->addWidget(m_pbutEdit);
 	_hlay->addWidget(m_pbutDel);
 
 	_vlay->addLayout(_hlay);
-	_vlay->addWidget(_table);
+	_vlay->addWidget(m_table);
 
 	setLayout(_vlay);
 
@@ -75,30 +81,37 @@ void OrderForm::Initialize()
 	// 设置下拉列表样式
 	//_combShipment->setEditable(true);
 
-	m_model = new QStandardItemModel();	/*!< 分盘机表单成员模板 */
+	m_model = new QStandardItemModel(this);
 
 	// 为模板设置列头
 	int _index = 0;
-	// 为分盘机模板设置列头
-	m_model->setColumnCount(9);
+
+	m_model->setColumnCount(12);
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("订单号"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("任务号"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("托盘码"));
-	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("分盘机"));
-	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("分拣台"));
-	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("出货口"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("目的地"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("任务内容"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("执行者"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("状态"));
-	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("下单时间"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("发布时间"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("执行时间"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("完成时间"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("异常信息"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("备注"));
 
-	QItemSelectionModel* _selModel = new QItemSelectionModel(m_model);
+	m_table->setModel(m_model);
 
-	_table->setModel(m_model);
-	_table->setSelectionModel(_selModel);
-	_table->setSelectionMode(QAbstractItemView::SelectionMode::SingleSelection);
-	_table->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
+	// 单选
+	m_table->setSelectionMode(QAbstractItemView::SelectionMode::ExtendedSelection);
+	// 选中整行
+	m_table->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
 
-	_table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeMode::Stretch);
+	// 自动拉伸
+	m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeMode::Stretch);
+
+	// 不可编辑
+	m_table->setEditTriggers(QAbstractItemView::EditTrigger::NoEditTriggers);
 
 	// 为控件添加信号和槽函数
 	QObject::connect(_cbutAuto, &QCheckBox::toggled, this, &OrderForm::OnClickCheckButton);
@@ -109,8 +122,11 @@ void OrderForm::Initialize()
 	QObject::connect(m_pbutAdd, &QPushButton::pressed, this, &OrderForm::PressedAddButton);
 	QObject::connect(m_pbutDel, &QPushButton::pressed, this, &OrderForm::PressedDeleteButton);
 	//QObject::connect(m_pbutEdit, &QPushButton::pressed, this, &OrderForm::PressedEditButton);
-	QObject::connect(_selModel, &QItemSelectionModel::currentChanged, this, &OrderForm::OnSelectItem);
 	QObject::connect(_pbutSel, &QPushButton::pressed, this, &OrderForm::PressedSelectButton);
+	QObject::connect(m_table, &QTableView::clicked, this, &OrderForm::OnSelectItem);
+	QObject::connect(_pbutSearch, &QPushButton::pressed, this, &OrderForm::PressedSearchButton);
+	QObject::connect(m_table, &QTableView::doubleClicked, this, &OrderForm::PressedSearchButton);
+
 	return;
 }
 
@@ -157,6 +173,14 @@ void OrderForm::EditFinished()
 	m_strlSortTable = m_leditSort->text().split(';');
 	m_byShipmentPort = m_leditShipment->text().toInt();
 
+	if ((m_strOrder.isNull() || m_strOrder.isEmpty()) && (m_strTray.isNull() || m_strTray.isEmpty()))
+	{
+		m_bSearch = false;
+
+		UpdateData();
+		return;
+	}
+
 	return;
 }
 
@@ -184,6 +208,13 @@ void OrderForm::PressedAddButton()
 
 	emit AddNewOrder(_result);
 
+	if (_result == false)
+	{
+		return;
+	}
+
+	UpdateData();
+
 	return;
 }
 
@@ -204,7 +235,7 @@ void OrderForm::PressedDeleteButton()
 		return;
 	}
 
-	DeleteOrder(m_strOrder);
+	UpdateData();
 
 	m_strOrder = m_leditNo->text();
 	m_strTray = m_leditTary->text();
@@ -214,19 +245,18 @@ void OrderForm::PressedDeleteButton()
 	return;
 }
 
-void OrderForm::OnSelectItem(const QModelIndex& current, const QModelIndex& previous)
+void OrderForm::OnSelectItem(const QModelIndex& current)
 {
 	if (current.isValid())
 	{
 		// 将单元格的内容填入属性配置信息中
-
 		m_leditNo->setText(m_model->item(current.row(), 0)->text());
 
-		m_leditTary->setText(m_model->item(current.row(), 1)->text());
+		m_leditTary->setText(m_model->item(current.row(), 2)->text());
 
-		m_leditSort->setText(m_model->item(current.row(), 3)->text());
+		m_leditSort->setText("");
 
-		m_leditShipment->setText(m_model->item(current.row(), 4)->text());
+		m_leditShipment->setText("");
 	}
 
 	m_strOrder = m_leditNo->text();
@@ -252,17 +282,33 @@ void OrderForm::PressedSelectButton()
 
 	_dbutbox->setCenterButtons(true);
 
-	QHBoxLayout* _layoutCheck = new QHBoxLayout();
+	QGridLayout* _layoutCheck = new QGridLayout();
 
 	QMap<quint8, QCheckBox*> _mapCheckSort;
 
-	for (QSet<quint8>::iterator it = m_setSort.begin(); it != m_setSort.end(); ++it)
+	int row = 0, col = 0;
+
+	for (QMap<quint8, QString>::iterator it = m_mapSort.begin(); it != m_mapSort.end(); ++it, ++col)
 	{
-		quint8 _no = *it;
+		if (col == 5)
+		{
+			++row;
+			col = 0;
+		}
 
-		_mapCheckSort[_no] = new QCheckBox(QString::fromLocal8Bit("分捡台%1").arg(_no), _dialog);
+		quint8 _no = it.key();
+		QString _name = it.value();
 
-		_layoutCheck->addWidget(_mapCheckSort[_no]);
+		if (_name.isNull() || _name.isEmpty())
+		{
+			_mapCheckSort[_no] = new QCheckBox(QString::fromLocal8Bit("分捡台%1").arg(_no), _dialog);
+		}
+		else
+		{
+			_mapCheckSort[_no] = new QCheckBox(QString::fromLocal8Bit("%1:%2").arg(_no).arg(_name), _dialog);
+		}
+
+		_layoutCheck->addWidget(_mapCheckSort[_no], row, col);
 	}
 
 	_gbox->setLayout(_layoutCheck);
@@ -300,7 +346,7 @@ void OrderForm::PressedSelectButton()
 	// 将选中的分捡台，填入编辑框中
 	QString _list = "";
 
-	for (QMap<quint8, QCheckBox*>::iterator it = _mapCheckSort.begin(); it != _mapCheckSort.end(); ++it, _list += ";")
+	for (QMap<quint8, QCheckBox*>::iterator it = _mapCheckSort.begin(); it != _mapCheckSort.end(); ++it)
 	{
 		quint8 _no = it.key();
 
@@ -308,6 +354,8 @@ void OrderForm::PressedSelectButton()
 		{
 			continue;
 		}
+
+		_list += ";";
 
 		_list += QString::fromLocal8Bit("%1").arg(_no);
 	}
@@ -320,123 +368,161 @@ void OrderForm::PressedSelectButton()
 	return;
 }
 
-void OrderForm::AddNewSortTable(quint8 no)
+void OrderForm::PressedSearchButton()
 {
-	if (m_setSort.find(no) != m_setSort.end())
+	m_bSearch = true;
+
+	UpdateData();
+
+	return;
+}
+
+void OrderForm::AddNewSortTable(quint8 no, QString name)
+{
+	if (m_mapSort.find(no) != m_mapSort.end())
 	{
 		return;
 	}
 
-	m_setSort.insert(no);
+	m_mapSort[no] = name;
 
 	return;
 }
 
 void OrderForm::DeleteSortTable(quint8 no)
 {
-	if (m_setSort.find(no) == m_setSort.end())
+	if (m_mapSort.find(no) == m_mapSort.end())
 	{
 		return;
 	}
 
-	m_setSort.erase(m_setSort.find(no));
+	m_mapSort.erase(m_mapSort.find(no));
 
 	return;
 }
 
-bool OrderForm::AddNewOrder(QString no, QString tray, quint8 discharger, QString sorttable, quint8 shipmentport)
+void OrderForm::UpdateData()
 {
-	if (no.isNull() || no.isEmpty())
-	{
-		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！无效的订单编号。"));
-		return false;
-	}
-
-	if (sorttable.isNull() || sorttable.isEmpty() == 0)
-	{
-		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！未选择分捡台。"));
-		return false;
-	}
-
-	if (shipmentport <= 0 || shipmentport >= 255)
-	{
-		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！无效的出货口编号。\n注意：编号仅支持大于0且小于255的值。"));
-		return false;
-	}
-
-	if (discharger <= 0 || discharger >= 255)
-	{
-		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！无效的分盘机编号。\n注意：编号仅支持大于0且小于255的值。"));
-		return false;
-	}
-
-
-	// 向列表中添加出货口
-	QList<QStandardItem*> _list;
-	_list.push_back(new QStandardItem(no));
-	_list.push_back(new QStandardItem(tray));
-	_list.push_back(new QStandardItem(QString::fromLocal8Bit("%1").arg(discharger)));
-	_list.push_back(new QStandardItem(sorttable));
-	_list.push_back(new QStandardItem(QString::fromLocal8Bit("%1").arg(shipmentport)));
-	_list.push_back(new QStandardItem(""));
-	_list.push_back(new QStandardItem(QString::fromLocal8Bit("未执行")));
-
-	m_model->appendRow(_list);
-
-	for (QList<QStandardItem*>::iterator it = _list.begin(); it != _list.end(); ++it)
-	{
-		(*it)->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-		(*it)->setEditable(false);
-		(*it)->setToolTip((*it)->text());
-	}
-
-	return true;
-}
-
-void OrderForm::DeleteOrder(QString no)
-{
-	if (no.isNull() || no.isEmpty())
+	if (m_database.isOpen() == false)
 	{
 		return;
 	}
 
-	// 从列表中删除该编号的订单
-	for (int i = 0; i < m_model->rowCount(); ++i)
+	QSqlQuery _query(m_database);
+
+	QString _sql = "select * from AGVDB_TASK_CURRENT";
+
+	if (m_bSearch)
 	{
-		QStandardItem* _aItem = m_model->item(i);
+		bool _where = false;
 
-		if (_aItem->text() == no)
+		if (m_strOrder.isNull() == false && m_strOrder.isEmpty() == false)
 		{
-			m_model->removeRow(i);
+			if (_where == false)
+			{
+				_sql += " where ";
 
-			return;
+				_where = true;
+			}
+			else
+			{
+				_sql += " and ";
+			}
+
+			_sql += QString::fromLocal8Bit("task_order like '%%1%'").arg(m_strOrder);
+		}
+
+		if (m_strTray.isNull() == false && m_strTray.isEmpty() == false)
+		{
+			if (_where == false)
+			{
+				_sql += " where ";
+
+				_where = true;
+			}
+			else
+			{
+				_sql += " and ";
+			}
+
+			_sql += QString::fromLocal8Bit(" and task_tray like '%%1%'").arg(m_strTray);
 		}
 	}
+
+	if (_query.exec(_sql) == false)
+	{
+		return;
+	}
+
+	m_model->clear();
+
+	// 为模板设置列头
+	int _index = 0;
+
+	m_model->setColumnCount(12);
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("订单号"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("任务号"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("托盘码"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("目的地"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("任务内容"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("执行者"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("状态"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("发布时间"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("执行时间"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("完成时间"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("异常信息"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("备注"));
+
+	//m_model->(0, m_model->rowCount());
+
+	while (_query.next())
+	{
+		QList<QStandardItem*> _list;
+		_list.push_back(new QStandardItem(_query.value("task_order").toString()));
+		_list.push_back(new QStandardItem(QString::fromLocal8Bit("%1").arg(_query.value("task_id").toInt())));
+		_list.push_back(new QStandardItem(_query.value("task_tray").toString()));
+		_list.push_back(new QStandardItem(_query.value("task_target").toString()));
+		_list.push_back(new QStandardItem(_query.value("task_mission").toString()));
+		_list.push_back(new QStandardItem(QString::fromLocal8Bit("%1").arg(_query.value("task_executer").toInt())));
+		_list.push_back(new QStandardItem(_query.value("task_status").toString()));
+		_list.push_back(new QStandardItem(_query.value("task_publish").toDateTime().toString("yyyy/MM/dd hh:mm:ss:zzz")));
+		_list.push_back(new QStandardItem(_query.value("task_execution").toDateTime().toString("yyyy/MM/dd hh:mm:ss:zzz")));
+		_list.push_back(new QStandardItem(_query.value("task_finish").toDateTime().toString("yyyy/MM/dd hh:mm:ss:zzz")));
+		_list.push_back(new QStandardItem(_query.value("task_error").toString()));
+		_list.push_back(new QStandardItem(_query.value("task_log").toString()));
+
+		m_model->appendRow(_list);
+
+		for (QList<QStandardItem*>::iterator it = _list.begin(); it != _list.end(); ++it)
+		{
+			(*it)->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+			(*it)->setEditable(false);
+			(*it)->setToolTip((*it)->text());
+		}
+
+	} while (_query.next());
 
 	return;
 }
 
-void OrderForm::UpdateOrder(QString no, QString executer, QString status, QString starttime, QString finishtime)
+void OrderForm::OpenDatabase(QString host, QString name, QString user, QString password)
 {
-	if (no.isNull() || no.isEmpty())
+	m_database.setDatabaseName(QString("DRIVER={SQL SERVER};"
+		"SERVER=%1;"
+		"DATABASE=%2;"
+		"UID=%3;"
+		"PWD=%4;").arg(host).arg(name).arg(user).arg(password));
+
+	m_database.open();
+
+	return;
+}
+
+void OrderForm::CloseDatabase()
+{
+	if (m_database.isOpen())
 	{
-		return;
-	}
-
-	// 从列表中删除该编号的订单
-	for (int i = 0; i < m_model->rowCount(); ++i)
-	{
-		QStandardItem* _aItem = m_model->item(i);
-
-		if (_aItem->text() != no)
-		{
-			continue;
-		}
-
-		m_model->item(i, 5)->setText(executer);
-		m_model->item(i, 6)->setText(status);
-		m_model->item(i, 7)->setText(starttime);
-		m_model->item(i, 8)->setText(finishtime);
+		m_database.close();
 	}
 
 	return;

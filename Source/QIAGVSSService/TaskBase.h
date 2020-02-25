@@ -35,6 +35,7 @@ static QString CreateOrderNumber();
 
 static const QString TASK_STA_DEFAULT = QString::fromLocal8Bit("未执行");	/*!< 默认的任务执行状态 */
 static const QString TASK_STA_START = QString::fromLocal8Bit("开始执行");
+static const QString TASK_STA_EXECUT = QString::fromLocal8Bit("执行中");
 static const QString TASK_STA_FINISH = QString::fromLocal8Bit("执行完成");
 static const QString TASK_STA_CANCEL = QString::fromLocal8Bit("取消订单");
 static const QString TASK_ERR_DEFAULT = QString::fromLocal8Bit("正常");		/*!< 默认的任务异常信息 */

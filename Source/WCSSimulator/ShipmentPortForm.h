@@ -91,7 +91,7 @@ private slots:
 	 * @since 2020/2/23 FanKaiyu
 	 * 当前选择的Item发生改变时触发的槽函数
 	 */
-	void OnSelectItem(const QModelIndex& current, const QModelIndex& previous);
+	void OnSelectItem(const QModelIndex& current);
 
 	/*!
 	 * @brief 选择下拉项
@@ -152,4 +152,9 @@ public:
 	 * 修改列表中出货口的属性参数
 	 */
 	bool EditShipmentPort(quint8 no, QString name, bool full);
+
+	void Clear();
+
+	bool IsVaild(quint8 no);
+	bool IsVaild(quint8 no, QString& name, bool& full);
 };

@@ -11,6 +11,7 @@
 #include <QJsonDocument>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QSqlResult>
 
 WCSSimulator::WCSSimulator(QWidget* parent)
 	: QMainWindow(parent)
@@ -19,7 +20,7 @@ WCSSimulator::WCSSimulator(QWidget* parent)
 	, m_wDischarger(nullptr)
 	, m_wSortTable(nullptr)
 	, m_server(nullptr)
-	, m_database(QSqlDatabase::addDatabase("QODBC3", "main"))
+	, m_database(QSqlDatabase::addDatabase("QODBC3"))
 {
 	//ui.setupUi(this);
 	Initialize();
@@ -50,7 +51,7 @@ void WCSSimulator::Initialize()
 
 	// 初始化子控件
 
-	QWidget* _wMain = new QWidget(this);													/*!< 主窗口中心控件 */
+	QWidget* _wMain = new QWidget(this);														/*!< 主窗口中心控件 */
 	m_wDatabase = new DatabaseForm(_dbHost, _dbName, _dbUser, _dbPwd, _wMain);				/*!< 数据库控件 */
 	m_wServer = new ServerForm(_srvAddr, _wMain);											/*!< 服务端控件 */
 	m_wDischarger = new DischargerForm(_wMain);												/*!< 分盘机控件 */
@@ -59,8 +60,8 @@ void WCSSimulator::Initialize()
 	m_wOrder = new OrderForm(_wMain);														/*!< 订单详情控件 */
 
 	QGroupBox* _groupDatabase = new QGroupBox(QString::fromLocal8Bit("数据库"), this);		/*!< 数据库分组框 */
-	QGroupBox* _groupServer = new QGroupBox(QString::fromLocal8Bit("服务端"), this);		/*!< 服务端分组框 */
-	QGroupBox* _groupDischarger = new QGroupBox(QString::fromLocal8Bit("分盘机"), this);	/*!< 分盘机分组框 */
+	QGroupBox* _groupServer = new QGroupBox(QString::fromLocal8Bit("服务端"), this);			/*!< 服务端分组框 */
+	QGroupBox* _groupDischarger = new QGroupBox(QString::fromLocal8Bit("分盘机"), this);		/*!< 分盘机分组框 */
 	QGroupBox* _groupSort = new QGroupBox(QString::fromLocal8Bit("分拣台"), this);			/*!< 分拣台分组框 */
 	QGroupBox* _groupShipment = new QGroupBox(QString::fromLocal8Bit("出库口"), this);		/*!< 出货口分组框 */
 	QGroupBox* _groupOrder = new QGroupBox(QString::fromLocal8Bit("订单详情"), this);		/*!< 订单详情分组框 */
@@ -142,8 +143,8 @@ void WCSSimulator::Initialize()
 	QObject::connect(m_wDischarger, static_cast<void (DischargerForm::*)(bool&)>(&DischargerForm::EditDischarger), this, &WCSSimulator::slotEditDischarger);
 
 	QObject::connect(m_wSortTable, static_cast<void (SortTableForm::*)(bool&)>(&SortTableForm::AddNewSortTable), this, &WCSSimulator::slotAddNewSortTable);
-	QObject::connect(m_wSortTable, static_cast<void (SortTableForm::*)(bool&)>(&SortTableForm::AddNewSortTable), this, &WCSSimulator::slotDeleteSortTable);
-	QObject::connect(m_wSortTable, static_cast<void (SortTableForm::*)(bool&)>(&SortTableForm::AddNewSortTable), this, &WCSSimulator::slotEditSortTable);
+	QObject::connect(m_wSortTable, static_cast<void (SortTableForm::*)(bool&)>(&SortTableForm::DeleteSortTable), this, &WCSSimulator::slotDeleteSortTable);
+	QObject::connect(m_wSortTable, static_cast<void (SortTableForm::*)(bool&)>(&SortTableForm::EditSortTable), this, &WCSSimulator::slotEditSortTable);
 
 	QObject::connect(m_wShipment, static_cast<void (ShipmentPortForm::*)(bool&)>(&ShipmentPortForm::AddNewShipmentPort), this, &WCSSimulator::slotAddNewShipmentPort);
 	QObject::connect(m_wShipment, static_cast<void (ShipmentPortForm::*)(bool&)>(&ShipmentPortForm::DeleteShipmentPort), this, &WCSSimulator::slotDeleteShipmentPort);
@@ -218,6 +219,169 @@ void WCSSimulator::closeEvent(QCloseEvent* event)
 {
 	slotSave();
 	event->accept();
+
+	return;
+}
+
+void WCSSimulator::InitDatabase()
+{
+	QSqlQuery _query(m_database);
+
+	// 创建数据库表
+
+	// 创建分盘机表单
+	QString _sql = QString::fromLocal8Bit("\
+Create Table WCS_INFO_DISCHARGER(\
+disc_no int not null primary key,\
+disc_addr nvarchar(50) not null,\
+disc_port int not null default 0,\
+disc_client bit not null default 1,\
+disc_status int not null default 0\
+);\
+");
+
+	if (_query.exec(_sql) == false)
+	{
+		qDebug() << QString::fromLocal8Bit("创建WCS_INFO_DISCHARGER表单失败：") << _query.lastError().text();
+	}
+
+	// 创建分捡台表单
+	_sql = QString::fromLocal8Bit("\
+Create Table WCS_INFO_SORTTABLE(\
+table_no int not null primary key,\
+table_name nvarchar(50) not null,\
+);\
+");
+
+	if (_query.exec(_sql) == false)
+	{
+		qDebug() << QString::fromLocal8Bit("创建WCS_INFO_SORTTABLE表单失败：") << _query.lastError().text();
+	}
+
+	// 创建出货口表单
+	_sql = QString::fromLocal8Bit("\
+Create Table WCS_INFO_SHIPMENTPORT(\
+port_no int not null primary key,\
+port_name nvarchar(50) not null,\
+port_full bit not null default 0,\
+);\
+");
+
+	if (_query.exec(_sql) == false)
+	{
+		qDebug() << QString::fromLocal8Bit("创建WCS_INFO_SHIPMENTPORT表单失败：") << _query.lastError().text();
+	}
+
+	// 创建CHECK
+
+	_sql = QString::fromLocal8Bit("ALTER Table WCS_INFO_DISCHARGER add CONSTRAINT chk_disc_no check(disc_no>0 and disc_no<255);");
+
+	if (_query.exec(_sql) == false)
+	{
+		qDebug() << _query.lastError().text();
+	}
+
+	_sql = QString::fromLocal8Bit("ALTER Table WCS_INFO_DISCHARGER add CONSTRAINT chk_disc_port check(disc_port>-1 and disc_no<65536);");
+
+	if (_query.exec(_sql) == false)
+	{
+		qDebug() << _query.lastError().text();
+	}
+
+	_sql = QString::fromLocal8Bit("ALTER Table WCS_INFO_SORTTABLE add CONSTRAINT chk_table_no check(table_no>0 and table_no<255);");
+
+	if (_query.exec(_sql) == false)
+	{
+		qDebug() << _query.lastError().text();
+	}
+
+	_sql = QString::fromLocal8Bit("ALTER Table WCS_INFO_SHIPMENTPORT add CONSTRAINT chk_port_no check(port_no>0 and port_no<255);");
+
+	if (_query.exec(_sql) == false)
+	{
+		qDebug() << _query.lastError().text();
+	}
+
+	// 创建约束
+
+	_sql = QString::fromLocal8Bit("ALTER Table WCS_INFO_SORTTABLE add CONSTRAINT uc_table_name unique (table_name);");
+
+	if (_query.exec(_sql) == false)
+	{
+		qDebug() << _query.lastError().text();
+	}
+
+	_sql = QString::fromLocal8Bit("ALTER Table WCS_INFO_SHIPMENTPORT add CONSTRAINT uc_port_name unique (port_name);");
+
+	if (_query.exec(_sql) == false)
+	{
+		qDebug() << _query.lastError().text();
+	}
+
+	// 读取数据库中的数据
+	LoadDatabase();
+
+	return;
+}
+
+void WCSSimulator::LoadDatabase()
+{
+	m_wDischarger->Clear();
+	m_wSortTable->Clear();
+	m_wShipment->Clear();
+
+	// TODO 删除分盘机
+
+	QSqlQuery _query(m_database);
+
+	QString _sql = "select * from WCS_INFO_DISCHARGER order by disc_no";
+
+	if (_query.exec(_sql))
+	{
+		while (_query.next())
+		{
+			quint8 _no = _query.value("disc_no").toInt();
+			QString _addr = _query.value("disc_addr").toString();
+			quint16 _port = _query.value("disc_port").toInt();
+			bool _client = _query.value("disc_client").toBool();
+			quint8 _status = _query.value("disc_status").toInt();
+
+			m_wDischarger->AddNewDischarger(_no, _addr, _port, _client);
+			m_wDischarger->Update(_no, _status);
+
+			// TODO 添加分盘机
+		}
+	}
+
+	_sql = "select * from WCS_INFO_SORTTABLE order by table_no";
+
+	if (_query.exec(_sql))
+	{
+		while (_query.next())
+		{
+			quint8 _no = _query.value("table_no").toInt();
+			QString _name = _query.value("table_name").toString();
+
+			m_wSortTable->AddNewSortTable(_no, _name);
+			m_wOrder->AddNewSortTable(_no, _name);
+		}
+	}
+
+	_sql = "select * from WCS_INFO_SHIPMENTPORT order by port_no";
+
+	if (_query.exec(_sql))
+	{
+		while (_query.next())
+		{
+			quint8 _no = _query.value("port_no").toInt();
+			QString _name = _query.value("port_name").toString();
+			bool _full = _query.value("port_full").toBool();
+
+			m_wShipment->AddNewShipmentPort(_no, _name, _full);
+		}
+	}
+
+	m_wOrder->UpdateData();
 
 	return;
 }
@@ -488,6 +652,8 @@ void WCSSimulator::slotLinkDatabase(bool& linked)
 	if (m_database.isOpen())
 	{
 		m_database.close();
+
+		m_wOrder->CloseDatabase();
 	}
 
 	m_database.setDatabaseName(QString("DRIVER={SQL SERVER};"
@@ -505,9 +671,9 @@ void WCSSimulator::slotLinkDatabase(bool& linked)
 		return;
 	}
 
-	// TODO 创建数据库表
+	m_wOrder->OpenDatabase(m_wDatabase->m_strHost, m_wDatabase->m_strDbName, m_wDatabase->m_strUser, m_wDatabase->m_strPassword);
 
-	// TODO 读取数据库中的数据
+	InitDatabase();
 
 	return;
 }
@@ -517,6 +683,8 @@ void WCSSimulator::slotCloseDatabase()
 	if (m_database.isOpen())
 	{
 		m_database.close();
+
+		m_wOrder->CloseDatabase();
 	}
 
 	return;
@@ -524,42 +692,134 @@ void WCSSimulator::slotCloseDatabase()
 
 void WCSSimulator::slotAddNewDischarger(bool& result)
 {
-	// TODO 将数据添加进数据库表中
+	// 将数据添加进数据库表中
+	QSqlQuery _query(m_database);
+
+	QString _addr(m_wDischarger->m_strAddr.section(':', 0, -2));
+	quint16 _port = static_cast<quint16>(m_wDischarger->m_strAddr.section(':', -1, -1).toUInt());
+
+	QString _sql = QString("insert into WCS_INFO_DISCHARGER(disc_no,disc_addr,disc_port,disc_client) values(%1,'%2',%3,%4)")
+		.arg(m_wDischarger->m_byNo)
+		.arg(_addr)
+		.arg(_port)
+		.arg(m_wDischarger->m_bClient);
+
+	result = _query.exec(_sql);
+
+	if (result == false)
+	{
+		qDebug() << "insert into WCS_INFO_DISCHARGER failed:" << _query.lastError().text();
+
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加分盘机"), QString::fromLocal8Bit("添加分盘机失败！已存在相同的编号。\n%1")
+			.arg(_query.lastError().text()));
+
+		return;
+	}
+
+	// TODO 添加分盘机
 
 	return;
 }
 
 void WCSSimulator::slotDeleteDischarger(bool& result)
 {
-	// TODO 将数据从数据库表中删除
+	// 将数据从数据库表中删除
+	QSqlQuery _query(m_database);
+
+	QString _sql = QString("delete from WCS_INFO_DISCHARGER where disc_no=%1").arg(m_wDischarger->m_byNo);
+
+	result = _query.exec(_sql);
+
+	if (result == false)
+	{
+		qDebug() << "delete from WCS_INFO_DISCHARGER failed:" << _query.lastError().text();
+		return;
+	}
+
+	// TODO 删除分盘机
 
 	return;
 }
 
 void WCSSimulator::slotEditDischarger(bool& result)
 {
-	// TODO 修改数据表中的数据
+	// 修改数据表中的数据
+	QSqlQuery _query(m_database);
+
+	QString _addr(m_wDischarger->m_strAddr.section(':', 0, -2));
+	quint16 _port = static_cast<quint16>(m_wDischarger->m_strAddr.section(':', -1, -1).toUInt());
+
+	QString _sql = QString("update WCS_INFO_DISCHARGER set disc_addr='%1',disc_port=%2,disc_client=%3 where disc_no=%4")
+		.arg(_addr)
+		.arg(_port)
+		.arg(m_wDischarger->m_bClient)
+		.arg(m_wDischarger->m_byNo);
+
+	result = _query.exec(_sql);
+
+	if (result == false)
+	{
+		qDebug() << "update WCS_INFO_DISCHARGER failed:" << _query.lastError().text();
+		return;
+	}
+
+	// TODO 修改分盘机属性
 
 	return;
 }
 
 void WCSSimulator::slotAddNewSortTable(bool& result)
 {
-	// TODO 将数据添加进数据库表中
+	// 将数据添加进数据库表中
+	QSqlQuery _query(m_database);
+
+	QString _sql = QString("if not exists(select * from WCS_INFO_SHIPMENTPORT where port_name='%1')\
+ insert into WCS_INFO_SORTTABLE(table_no,table_name) values(%2,'%3')")
+		.arg(m_wSortTable->m_strName)
+		.arg(m_wSortTable->m_byNo)
+		.arg(m_wSortTable->m_strName);
+
+	_query.exec(_sql);
+
+	if (_query.numRowsAffected() > 0)
+	{
+		result = true;
+	}
+	else
+	{
+		result = false;
+	}
 
 	if (result == false)
 	{
+		qDebug() << "insert into WCS_INFO_SORTTABLE failed:" << _query.lastError().text();
+
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加分捡台"), QString::fromLocal8Bit("添加分捡台失败！已存在相同的编号或名称。\n%1")
+			.arg(_query.lastError().text()));
+
 		return;
 	}
 
-	m_wOrder->AddNewSortTable(m_wSortTable->m_byNo);
+	m_wOrder->AddNewSortTable(m_wSortTable->m_byNo, m_wSortTable->m_strName);
 
 	return;
 }
 
 void WCSSimulator::slotDeleteSortTable(bool& result)
 {
-	// TODO 将数据从数据库表中删除
+	// 将数据从数据库表中删除
+	QSqlQuery _query(m_database);
+
+	QString _sql = QString("delete from WCS_INFO_SORTTABLE where table_no=%1")
+		.arg(m_wSortTable->m_byNo);
+
+	result = _query.exec(_sql);
+
+	if (result == false)
+	{
+		qDebug() << "delete from WCS_INFO_SORTTABLE failed:" << _query.lastError().text();
+		return;
+	}
 
 	m_wOrder->DeleteSortTable(m_wSortTable->m_byNo);
 
@@ -568,54 +828,270 @@ void WCSSimulator::slotDeleteSortTable(bool& result)
 
 void WCSSimulator::slotEditSortTable(bool& result)
 {
-	// TODO 修改数据表中的数据
+	// 修改数据表中的数据
+	QSqlQuery _query(m_database);
+
+	QString _sql = QString("if not exists(select * from WCS_INFO_SHIPMENTPORT where port_name='%1')\
+ update WCS_INFO_SORTTABLE set table_name='%2' where table_no=%3")
+		.arg(m_wSortTable->m_strName)
+		.arg(m_wSortTable->m_strName)
+		.arg(m_wSortTable->m_byNo);
+
+	_query.exec(_sql);
+
+	if (_query.numRowsAffected() > 0)
+	{
+		result = true;
+	}
+	else
+	{
+		result = false;
+	}
+
+	if (result == false)
+	{
+		qDebug() << "update WCS_INFO_SORTTABLE failed:" << _query.lastError().text();
+
+		QMessageBox::critical(this, QString::fromLocal8Bit("编辑分捡台"), QString::fromLocal8Bit("修改分捡台名称失败！已存在相同的或名称。\n%1")
+			.arg(_query.lastError().text()));
+
+		return;
+	}
 
 	return;
 }
 
 void WCSSimulator::slotAddNewShipmentPort(bool& result)
 {
-	// TODO 将数据添加进数据库表中
+	// 将数据添加进数据库表中
+	QSqlQuery _query(m_database);
+
+	QString _sql = QString("if not exists(select * from WCS_INFO_SORTTABLE where table_name='%1')\
+ insert into WCS_INFO_SHIPMENTPORT(port_no,port_name,port_full) values(%2,'%3',%4)")
+		.arg(m_wShipment->m_strName)
+		.arg(m_wShipment->m_byNo)
+		.arg(m_wShipment->m_strName)
+		.arg(m_wShipment->m_bFull);
+
+	_query.exec(_sql);
+
+	if (_query.numRowsAffected() > 0)
+	{
+		result = true;
+	}
+	else
+	{
+		result = false;
+	}
+
+	if (result == false)
+	{
+		qDebug() << "insert into WCS_INFO_SHIPMENTPORT failed:" << _query.lastError().text();
+
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加出货口"), QString::fromLocal8Bit("添加出货口失败！已存在相同的编号或名称。\n%1")
+			.arg(_query.lastError().text()));
+
+		return;
+	}
 
 	return;
 }
 
 void WCSSimulator::slotDeleteShipmentPort(bool& result)
 {
-	// TODO 将数据从数据库表中删除
+	// 将数据从数据库表中删除
+	QSqlQuery _query(m_database);
+
+	QString _sql = QString("delete from WCS_INFO_SHIPMENTPORT where port_no=%1")
+		.arg(m_wShipment->m_byNo);
+
+	result = _query.exec(_sql);
+
+	if (result == false)
+	{
+		qDebug() << "delete from WCS_INFO_SHIPMENTPORT failed:" << _query.lastError().text();
+		return;
+	}
 
 	return;
 }
 
 void WCSSimulator::slotEditShipmentPort(bool& result)
 {
-	// TODO 修改数据表中的数据
+	// 修改数据表中的数据
+	QSqlQuery _query(m_database);
+
+	QString _sql = QString("if not exists(select * from WCS_INFO_SORTTABLE where table_name='%1')\
+ update WCS_INFO_SHIPMENTPORT set port_name='%2',port_full=%3 where table_no=%4")
+		.arg(m_wShipment->m_strName)
+		.arg(m_wShipment->m_strName)
+		.arg(m_wShipment->m_bFull)
+		.arg(m_wShipment->m_byNo);
+
+	_query.exec(_sql);
+
+	if (_query.numRowsAffected() > 0)
+	{
+		result = true;
+	}
+	else
+	{
+		result = false;
+	}
+
+	if (result == false)
+	{
+		qDebug() << "update WCS_INFO_SHIPMENTPORT failed:" << _query.lastError().text();
+
+		QMessageBox::critical(this, QString::fromLocal8Bit("编辑出货口"), QString::fromLocal8Bit("修改出货口名称失败！已存在相同的或名称。\n%1")
+			.arg(_query.lastError().text()));
+
+		return;
+	}
 
 	return;
 }
 
 void WCSSimulator::slotAddNewOrder(bool& result)
 {
-	// TODO 确定数据表中不包含当前订单号的订单
+	QSqlQuery _query(m_database);
+
+	QString _sql = "";
+
+	quint8 _discharger = 0;
+
+	// 确定数据表中不包含当前订单号的订单
+	_sql = QString::fromLocal8Bit("select * from AGVDB_TASK_CURRENT where task_order='%1'").arg(m_wOrder->m_strOrder);
+
+	if (_query.exec(_sql) == false)
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！查询订单表单失败。\n%1")
+			.arg(_query.lastError().text()));
+
+		return;
+	}
+
+	if (_query.next())
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！已经存在了相同的订单号码的订单。"));
+
+		return;
+	}
 
 	// TODO 确定分盘机的状态，并为订单分配分盘机
 
-	// TODO 创建订单
+	// 创建订单
+	if (_discharger == 0)
+	{// 没有可分配的分盘机
 
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！未找到可用以分配的分盘机。"));
 
-	QString _sortList = "";
-	for (QStringList::iterator it = m_wOrder->m_strlSortTable.begin(); it != m_wOrder->m_strlSortTable.end(); ++it, _sortList += ";")
-	{
-		_sortList += *it;
+		return;
 	}
 
-	//m_wOrder->AddNewOrder(m_wOrder->m_strOrder, m_wOrder->m_strTray, , _sortList, m_wOrder->m_byShipmentPort);
+	// 创建分盘机上料任务
+	_sql = QString::fromLocal8Bit(
+		"insert into AGVDB_TASK_CURRENT(task_order,task_tray,task_target,task_mission) values('%1','%2','%3','%4');")
+		.arg(m_wOrder->m_strOrder)
+		.arg(m_wOrder->m_strTray)
+		.arg(QString::fromLocal8Bit("分盘机%1").arg(_discharger))
+		.arg(QString::fromLocal8Bit("上料"));
+
+	// 创建分拣机停靠任务
+	for (QStringList::iterator it = m_wOrder->m_strlSortTable.begin(); it != m_wOrder->m_strlSortTable.end(); ++it)
+	{
+		QString _name = "";
+
+		if (m_wSortTable->IsVaild((*it).toInt(), _name) == false)
+		{
+			QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！未找到分捡台%1。").arg(*it));
+
+			return;
+		}
+
+		if (_name.isNull() || _name.isEmpty())
+		{
+			_name = QString::fromLocal8Bit("分捡台%1").arg(*it);
+		}
+
+		_sql += QString::fromLocal8Bit(
+			"insert into AGVDB_TASK_CURRENT(task_order,task_tray,task_target,task_mission) values('%1','%2','%3','%4');")
+			.arg(m_wOrder->m_strOrder)
+			.arg(m_wOrder->m_strTray)
+			.arg(_name)
+			.arg(QString::fromLocal8Bit("停靠"));
+	}
+
+	// 创建出货口下料任务
+	QString _name = "";
+	bool _full = "";
+
+	if (m_wShipment->IsVaild(m_wOrder->m_byShipmentPort, _name, _full) == false)
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！未找到出货口。"));
+
+		return;
+	}
+
+	if (_full)
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！出货口已满载，无法使用。"));
+
+		return;
+	}
+
+	if (_name.isNull() || _name.isEmpty())
+	{
+		_name = QString::fromLocal8Bit("出货口%1").arg(m_wOrder->m_byShipmentPort);
+	}
+
+	_sql += QString::fromLocal8Bit(
+		"insert into AGVDB_TASK_CURRENT(task_order,task_tray,task_target,task_mission) values('%1','%2','%3','%4');")
+		.arg(m_wOrder->m_strOrder)
+		.arg(m_wOrder->m_strTray)
+		.arg(_name)
+		.arg(QString::fromLocal8Bit("下料"));
+
+	// 创建结束任务
+	_sql += QString::fromLocal8Bit(
+		"insert into AGVDB_TASK_CURRENT(task_order,task_tray,task_target,task_mission) values('%1','%2','%3','%4');")
+		.arg(m_wOrder->m_strOrder)
+		.arg(m_wOrder->m_strTray)
+		.arg(QString::fromLocal8Bit("无"))
+		.arg(QString::fromLocal8Bit("结束"));
+
+	result = _query.exec(_sql);
+
+	if (result == false)
+	{
+		qDebug() << "insert into AGVDB_TASK_CURRENT failed:" << _query.lastError().text();
+
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！\n%1")
+			.arg(_query.lastError().text()));
+
+		return;
+	}
+
 	return;
 }
 
 void WCSSimulator::slotDeleteOrder(bool& result)
 {
-	// TODO 将数据从数据库表中删除
+	// 将数据从数据库表中删除
+	QSqlQuery _query(m_database);
+
+	QString _sql = QString::fromLocal8Bit("update AGVDB_TASK_CURRENT set task_status='%1',task_finish=getdate() where task_order=%2")
+		.arg(QString::fromLocal8Bit("取消订单"))
+		.arg(m_wOrder->m_strOrder);
+
+	result = _query.exec(_sql);
+
+	if (result == false)
+	{
+		qDebug() << "update WCS_INFO_SHIPMENTPORT failed:" << _query.lastError().text();
+
+		return;
+	}
 
 	return;
 }

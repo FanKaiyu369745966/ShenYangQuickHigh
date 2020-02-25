@@ -106,7 +106,7 @@ private slots:
 	 * @since 2020/2/21 FanKaiyu
 	 * 当前选择的Item发生改变时触发的槽函数
 	 */
-	void OnSelectItem(const QModelIndex& current, const QModelIndex& previous);
+	void OnSelectItem(const QModelIndex& current);
 
 public:
 	/*!
@@ -193,4 +193,6 @@ public:
 	 * 更新分盘机的状态
 	 */
 	void Update(quint8 no, quint8 status);
+
+	void Clear();
 };

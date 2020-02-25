@@ -10,10 +10,14 @@
 #include <QComboBox>
 #include <QTableWidget>
 #include <QStandardItemModel>
+#include <QSqlQueryModel>
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QGroupBox>
 #include <QSet>
+#include <QSqlTableModel>
+#include <QSqlQuery>
+
 //#include "ui_OrderForm.h"
 
 class OrderForm : public QWidget
@@ -34,14 +38,17 @@ private:
 	QLineEdit* m_leditTary;
 	QLineEdit* m_leditSort;
 	QLineEdit* m_leditShipment;
+	QTableView* m_table;
 	QStandardItemModel* m_model;
 public:
-	QString m_strOrder;				/*< 订单号 */
-	QString m_strTray;				/*!< 托盘码 */
-	QStringList m_strlSortTable;	/*!< 分捡台列表 */
-	quint8 m_byShipmentPort;		/*!< 出货口编号 */
+	QString m_strOrder;					/*< 订单号 */
+	QString m_strTray;					/*!< 托盘码 */
+	QStringList m_strlSortTable;			/*!< 分捡台列表 */
+	quint8 m_byShipmentPort;				/*!< 出货口编号 */
 private:
-	QSet<quint8> m_setSort;			/*!< 分捡台集合 */
+	QSqlDatabase m_database;
+	QMap<quint8, QString> m_mapSort;		/*!< 分捡台集合 */
+	bool m_bSearch;						/*!< 搜索标识 */
 private:
 	/*!
 	 * @brief 初始化控件内的成员
@@ -92,12 +99,11 @@ private slots:
 	/*!
 	 * @brief 选择Item
 	 * @arg const QModelIndex &
-	 * @arg const QModelIndex &
 	 * @return void
 	 * @since 2020/2/23 FanKaiyu
 	 * 当前选择的Item发生改变时触发的槽函数
 	 */
-	void OnSelectItem(const QModelIndex& current, const QModelIndex& previous);
+	void OnSelectItem(const QModelIndex& current);
 
 	/*!
 	 * @brief 释放选择按钮
@@ -106,6 +112,14 @@ private slots:
 	 * 选择按钮释放后触发的槽函数
 	 */
 	void PressedSelectButton();
+
+	/*!
+	 * @brief 释放搜索按钮
+	 * @return void
+	 * @since 2020/2/25 FanKaiyu
+	 * 搜索安释放后触发的槽函数
+	 */
+	void PressedSearchButton();
 public:
 	/*!
 	 * @brief 添加分捡台
@@ -114,7 +128,7 @@ public:
 	 * @since 2020/2/24 FanKaiyu
 	 * 当分捡台增加时需调用此函数
 	 */
-	void AddNewSortTable(quint8 no);
+	void AddNewSortTable(quint8 no, QString name);
 
 	/*!
 	 * @brief 删除分捡台
@@ -125,39 +139,31 @@ public:
 	 */
 	void DeleteSortTable(quint8 no);
 
-	// TODO 添加订单
 	/*!
-	 * @brief 添加订单
-	 * @arg QString 订单号
-	 * @arg QString 托盘码
-	 * @arg quint8 分盘机编号
-	 * @arg QString 分捡台列表
-	 * @arg quint8 出货口编号
-	 * @return bool 添加成功返回true,否则返回false
-	 * @since 2020/2/24 FanKaiyu
-	 * 添加新的订单至订单列表
+	 * @brief 更新数据
+	 * @return void
+	 * @since 2020/2/25 FanKaiyu
+	 * 重新刷新数据
 	 */
-	bool AddNewOrder(QString no, QString tray, quint8 discharger, QString sorttable, quint8 shipmentport);
+	void UpdateData();
 
 	/*!
-	 * @brief 删除订单
-	 * @arg QString 订单号
+	 * @brief 打开数据库
+	 * @arg QString
+	 * @arg QString
+	 * @arg QString
+	 * @arg QString
 	 * @return void
-	 * @since 2020/2/24 FanKaiyu
-	 * 取消执行指定的订单号
+	 * @since 2020/2/25 FanKaiyu
+	 * 数据库连接成功时调用此函数
 	 */
-	void DeleteOrder(QString no);
+	void OpenDatabase(QString host, QString name, QString user, QString password);
 
 	/*!
-	 * @brief 更新订单的状态
-	 * @arg QString 订单号
-	 * @arg QString	执行订单的人员名称
-	 * @arg QString	订单执行的状态
-	 * @arg QString 下单时间
-	 * @arg QString 完成时间
+	 * @brief 关闭数据库
 	 * @return void
-	 * @since 2020/2/24 FanKaiyu
-	 * 更新订单的状态、执行者、时间等信息
+	 * @since 2020/2/25 FanKaiyu
+	 * 中止数据库连接时调用此函数
 	 */
-	void UpdateOrder(QString no, QString executer, QString status, QString starttime, QString finishtime = "");
+	void CloseDatabase();
 };

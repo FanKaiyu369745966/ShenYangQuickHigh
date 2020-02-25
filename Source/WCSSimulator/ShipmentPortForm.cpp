@@ -74,10 +74,7 @@ void ShipmentPortForm::Initialize()
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("名称"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("状态"));
 
-	QItemSelectionModel* _selModel = new QItemSelectionModel(m_model);
-
 	_table->setModel(m_model);
-	_table->setSelectionModel(_selModel);
 	_table->setSelectionMode(QAbstractItemView::SelectionMode::SingleSelection);
 	_table->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
 
@@ -89,7 +86,7 @@ void ShipmentPortForm::Initialize()
 	QObject::connect(m_pbutAdd, &QPushButton::pressed, this, &ShipmentPortForm::PressedAddButton);
 	QObject::connect(m_pbutDel, &QPushButton::pressed, this, &ShipmentPortForm::PressedDeleteButton);
 	QObject::connect(m_pbutEdit, &QPushButton::pressed, this, &ShipmentPortForm::PressedEditButton);
-	QObject::connect(_selModel, &QItemSelectionModel::currentChanged, this, &ShipmentPortForm::OnSelectItem);
+	QObject::connect(_table, &QTableView::clicked, this, &ShipmentPortForm::OnSelectItem);
 	QObject::connect(m_combStatus, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &ShipmentPortForm::OnComboSelect);
 
 	return;
@@ -172,7 +169,7 @@ void ShipmentPortForm::PressedEditButton()
 	return;
 }
 
-void ShipmentPortForm::OnSelectItem(const QModelIndex& current, const QModelIndex& previous)
+void ShipmentPortForm::OnSelectItem(const QModelIndex& current)
 {
 	if (current.isValid())
 	{
@@ -343,6 +340,76 @@ bool ShipmentPortForm::EditShipmentPort(quint8 no, QString name, bool full)
 			m_model->item(i, 2)->setText(QString::fromLocal8Bit("空闲"));
 		}
 
+	}
+
+	return true;
+}
+
+void ShipmentPortForm::Clear()
+{
+	m_model->clear();
+
+	// 为模板设置列头
+	int _index = 0;
+	// 为分盘机模板设置列头
+	m_model->setColumnCount(3);
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("序号"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("名称"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("状态"));
+
+	return;
+}
+
+bool ShipmentPortForm::IsVaild(quint8 no)
+{
+	if (no <= 0 || no >= 255)
+	{
+		return false;
+	}
+
+	for (int i = 0; i < m_model->rowCount(); ++i)
+	{
+		QStandardItem* _aItem = m_model->item(i);
+
+		if (_aItem->text().toInt() != no)
+		{
+			continue;
+		}
+
+		return true;
+
+	}
+
+	return false;
+}
+
+bool ShipmentPortForm::IsVaild(quint8 no, QString& name, bool& full)
+{
+	if (no <= 0 || no >= 255)
+	{
+		return false;
+	}
+
+	// 修改列表中该编号的出货口属性
+	for (int i = 0; i < m_model->rowCount(); ++i)
+	{
+		QStandardItem* _aItem = m_model->item(i);
+
+		if (_aItem->text().toInt() != no)
+		{
+			continue;
+		}
+
+		name = m_model->item(i, 1)->text();
+
+		if (m_model->item(i, 2)->text() == QString::fromLocal8Bit("满载"))
+		{
+			full = true;
+		}
+		else
+		{
+			full = false;
+		}
 	}
 
 	return true;

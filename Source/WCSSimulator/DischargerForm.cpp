@@ -73,10 +73,7 @@ void DischargerForm::Initialize()
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("连接"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("状态"));
 
-	QItemSelectionModel* _selModel = new QItemSelectionModel(m_model);
-
 	_table->setModel(m_model);
-	_table->setSelectionModel(_selModel);
 	_table->setSelectionMode(QAbstractItemView::SelectionMode::SingleSelection);
 	_table->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
 
@@ -89,7 +86,7 @@ void DischargerForm::Initialize()
 	QObject::connect(m_pbutAdd, &QPushButton::pressed, this, &DischargerForm::PressedAddButton);
 	QObject::connect(m_pbutDel, &QPushButton::pressed, this, &DischargerForm::PressedDeleteButton);
 	QObject::connect(m_pbutEdit, &QPushButton::pressed, this, &DischargerForm::PressedEditButton);
-	QObject::connect(_selModel, &QItemSelectionModel::currentChanged, this, &DischargerForm::OnSelectItem);
+	QObject::connect(_table, &QTableView::clicked, this, &DischargerForm::OnSelectItem);
 
 	return;
 }
@@ -223,7 +220,7 @@ void DischargerForm::PressedEditButton()
 	return;
 }
 
-void DischargerForm::OnSelectItem(const QModelIndex& current, const QModelIndex& previous)
+void DischargerForm::OnSelectItem(const QModelIndex& current)
 {
 	if (current.isValid())
 	{
@@ -463,6 +460,23 @@ void DischargerForm::Update(quint8 no, quint8 status)
 
 		m_model->item(i, 4)->setText(Discharger::status(status));
 	}
+
+	return;
+}
+
+void DischargerForm::Clear()
+{
+	m_model->clear();
+
+	// 为模板设置列头
+	int _index = 0;
+	// 为分盘机模板设置列头
+	m_model->setColumnCount(5);
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("序号"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("地址"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("模式"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("连接"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("状态"));
 
 	return;
 }

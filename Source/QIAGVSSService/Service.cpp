@@ -1247,10 +1247,11 @@ bool Service::ExecuteTask(const TaskBase& task)
 {
 	AgvPtr agv = task.m_executer;	/*!< AGV指针 */
 
-	QString error;
+	QString error;	/*!< 异常信息 */
 
 	if (agv == nullptr)
-	{
+	{// 无效的任务执行AGV指针 
+
 		qDebug() << "Execute task falied:Can not find AGV" << endl;
 
 		error = QString::fromLocal8Bit("执行任务失败:无法找到AGV");
@@ -1262,19 +1263,23 @@ bool Service::ExecuteTask(const TaskBase& task)
 	}
 
 	if (task.m_mission == TASK_MISSION_FINISH)
-	{
+	{// 结束任务
+
+		// 直接完成任务
 		return UpdateTask(task.m_task, TASK_STA_FINISH);
 	}
 
 	if (task.m_status == TASK_STA_FINISH)
 	{// 已经执行过的任务
+
+		// 跳过执行
 		return true;
 	}
 
 	WorkerPtr worker = task.m_target; /*!< 工作站指针 */
 
 	if (worker == nullptr)
-	{
+	{// 无效的工作站指针
 		qDebug() << "Execute task falied:Can not find work station" << endl;
 
 		error = QString::fromLocal8Bit("执行任务失败:无法找到工作站");
@@ -1286,7 +1291,9 @@ bool Service::ExecuteTask(const TaskBase& task)
 	}
 
 	if (task.m_status == TASK_STA_DEFAULT)
-	{
+	{// 未开始执行任务
+
+		// 更新任务状态为开始执行
 		UpdateTask(task.m_task, TASK_STA_START);
 
 		return false;
@@ -1296,20 +1303,33 @@ bool Service::ExecuteTask(const TaskBase& task)
 	rfid_t currnet = agv->GetAttribute().GetCurLocation();	/*!< 当前坐标 */
 
 	if (currnet != target)
-	{
+	{// 未到达目标位置
+
+		if (task.m_status != TASK_STA_START)
+		{// 未开始执行任务
+
+			// 更新任务状态为开始执行
+			UpdateTask(task.m_task, TASK_STA_START);
+		}
+
+		// 向目标位置移动
 		agv->Move(target);
 
+		// 清除异常
 		ClearError(task);
 
 		return false;
 	}
 
-	CallerPtr caller = m_zgbCtrler.GetCallerPtr(worker->GetId());
+	CallerPtr caller = m_zgbCtrler.GetCallerPtr(worker->GetId());	/*!< 任务的呼叫器指针 */
 
 	if (task.m_mission == TASK_MISSION_WAIT)
-	{
+	{// 等待任务
+
+		// 清除异常
 		ClearError(task);
 
+		// 清除呼叫器的呼叫信号
 		if (caller)
 		{
 			m_zgbCtrler.clear(*caller, SignalType::Signal_Call);
@@ -1318,12 +1338,12 @@ bool Service::ExecuteTask(const TaskBase& task)
 		return false;
 	}
 
-	QString curAct = agv->GetActionName();
+	QString curAct = agv->GetActionName();	/*!< AGV的当前动作信息 */
 	AgvExecution cueExe = agv->GetAttribute().GetExecution(); /*!< AGV动作执行状态 */
 
-	QString strAct;
+	QString strAct = "";		/*!< 任务动作信息 */
 
-	bool bLoad = false;
+	bool bLoad = false;	/*!< 上料标识 */
 
 	if (task.m_mission == TASK_MISSION_LOAD)
 	{
@@ -1337,7 +1357,16 @@ bool Service::ExecuteTask(const TaskBase& task)
 	}
 
 	if (curAct != strAct)
-	{
+	{// 当前动作与任务动作不同
+
+		if (task.m_status != TASK_STA_EXECUT)
+		{// 未开始执行任务
+
+			// 更新任务状态为开始执行
+			UpdateTask(task.m_task, TASK_STA_EXECUT);
+		}
+
+		// 执行任务动作
 		agv->Action(strAct);
 
 		return false;
@@ -1346,14 +1375,35 @@ bool Service::ExecuteTask(const TaskBase& task)
 	switch (cueExe)
 	{
 	case AgvExecution::Act_None:
+		// 未开始执行动作
+
+		if (task.m_status != TASK_STA_EXECUT)
+		{// 未开始执行任务
+
+			// 更新任务状态为开始执行
+			UpdateTask(task.m_task, TASK_STA_EXECUT);
+		}
+
+		// 执行任务动作
 		agv->Action(strAct);
 
+		// 清除异常
 		ClearError(task);
 
 		return false;
 	case AgvExecution::Act_Exe:
+		// 正在执行动作
+
+		if (task.m_status != TASK_STA_EXECUT)
+		{// 未开始执行任务
+
+			// 更新任务状态为开始执行
+			UpdateTask(task.m_task, TASK_STA_EXECUT);
+		}
+
 		if (agv->GetAttribute().GetActionExecuteTime() > 30 * 1000)
-		{
+		{// 超过30秒，动作未执行完成
+
 			error = QString::fromLocal8Bit("执行任务异常:AGV动作超时");
 
 			// 抛出异常
@@ -1361,20 +1411,32 @@ bool Service::ExecuteTask(const TaskBase& task)
 		}
 		else
 		{
+			// 清除异常
 			ClearError(task);
 		}
+
 		return false;
 	case AgvExecution::Act_Fin:
+		// 完成动作
 
+		// 清除异常
 		ClearError(task);
 
 		if (bLoad && caller && caller->GetAttribute().GetCallSignal() != Signal::Signal_Off)
-		{
+		{// 上料动作 并且 呼叫器有呼叫信号
+
+			// 清除呼叫器呼叫信号
 			m_zgbCtrler.ClearSignal(*caller, SignalType::Signal_Call);
 
 			return false;
 		}
 
+		if (bLoad && agv->GetAttribute().GetCargo() == AgvCargo::Cargo_Empty)
+		{// 上料动作 但是 未检测到货到
+			return false;
+		}
+
+		// 满足条件，完成任务
 		return UpdateTask(task.m_task, TASK_STA_FINISH);
 	}
 

@@ -4,6 +4,8 @@
 #include <QTcpServer>
 #include <QSqlDatabase>
 #include <QFile>
+#include <QThread>
+#include <QTimer>
 #include "ServerForm.h"
 #include "DischargerForm.h"
 #include "SortTableForm.h"
@@ -11,6 +13,7 @@
 #include "OrderForm.h"
 #include "DatabaseForm.h"
 #include "Discharger.h"
+
 //#include "ui_WCSSimulator.h"
 
 class WCSSimulator : public QMainWindow
@@ -57,6 +60,22 @@ private:
 	 * 重载QMainWindow的关闭事件。在程序关闭前储存配置文件。
 	 */
 	void closeEvent(QCloseEvent* event);
+
+	/*!
+	 * @brief 初始化数据库
+	 * @return void
+	 * @since 2020/2/25 FanKaiyu
+	 * 创建数据库表单
+	 */
+	void InitDatabase();
+
+	/*!
+	 * @brief 读取数据库
+	 * @return void
+	 * @since 2020/2/25 FanKaiyu
+	 * 读取数据库中的数据
+	 */
+	void LoadDatabase();
 private slots:
 	/*!
 	 * @brief 启动监听

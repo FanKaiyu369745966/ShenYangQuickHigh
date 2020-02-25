@@ -60,10 +60,7 @@ void SortTableForm::Initialize()
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("序号"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("名称"));
 
-	QItemSelectionModel* _selModel = new QItemSelectionModel(m_model);
-
 	_table->setModel(m_model);
-	_table->setSelectionModel(_selModel);
 	_table->setSelectionMode(QAbstractItemView::SelectionMode::SingleSelection);
 	_table->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
 
@@ -75,7 +72,7 @@ void SortTableForm::Initialize()
 	QObject::connect(m_pbutAdd, &QPushButton::pressed, this, &SortTableForm::PressedAddButton);
 	QObject::connect(m_pbutDel, &QPushButton::pressed, this, &SortTableForm::PressedDeleteButton);
 	QObject::connect(m_pbutEdit, &QPushButton::pressed, this, &SortTableForm::PressedEditButton);
-	QObject::connect(_selModel, &QItemSelectionModel::currentChanged, this, &SortTableForm::OnSelectItem);
+	QObject::connect(_table, &QTableView::clicked, this, &SortTableForm::OnSelectItem);
 
 	return;
 }
@@ -157,7 +154,7 @@ void SortTableForm::PressedEditButton()
 	return;
 }
 
-void SortTableForm::OnSelectItem(const QModelIndex& current, const QModelIndex& previous)
+void SortTableForm::OnSelectItem(const QModelIndex& current)
 {
 	if (current.isValid())
 	{
@@ -239,6 +236,66 @@ bool SortTableForm::EditSortTable(quint8 no, QString name)
 		}
 
 		m_model->item(i, 1)->setText(name);
+	}
+
+	return true;
+}
+
+void SortTableForm::Clear()
+{
+	m_model->clear();
+
+	// 为模板设置列头
+	int _index = 0;
+	// 为分盘机模板设置列头
+	m_model->setColumnCount(2);
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("序号"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("名称"));
+
+	return;
+}
+
+bool SortTableForm::IsVaild(quint8 no)
+{
+	if (no <= 0 || no >= 255)
+	{
+		return false;
+	}
+
+	for (int i = 0; i < m_model->rowCount(); ++i)
+	{
+		QStandardItem* _aItem = m_model->item(i);
+
+		if (_aItem->text().toInt() != no)
+		{
+			continue;
+		}
+
+		return true;
+
+	}
+
+	return false;
+}
+
+bool SortTableForm::IsVaild(quint8 no, QString& name)
+{
+	if (no <= 0 || no >= 255)
+	{
+		return false;
+	}
+
+	// 修改列表中该编号的出货口属性
+	for (int i = 0; i < m_model->rowCount(); ++i)
+	{
+		QStandardItem* _aItem = m_model->item(i);
+
+		if (_aItem->text().toInt() != no)
+		{
+			continue;
+		}
+
+		name = m_model->item(i, 1)->text();
 	}
 
 	return true;
