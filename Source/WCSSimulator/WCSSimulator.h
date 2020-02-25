@@ -25,6 +25,10 @@ private:
 private:
 	ServerForm* m_wServer;
 	DatabaseForm* m_wDatabase;
+	DischargerForm* m_wDischarger;
+	SortTableForm* m_wSortTable;
+	ShipmentPortForm* m_wShipment;
+	OrderForm* m_wOrder;
 private:
 	QTcpServer* m_server;
 	QSqlDatabase m_database;
@@ -121,4 +125,103 @@ private slots:
 	 * 终端与数据库的连接
 	 */
 	void slotCloseDatabase();
+
+	/*!
+	 * @brief 添加新的分盘机
+	 * @arg bool& 添加成功返回true,否则返回false
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 添加分盘机按钮释放时触发的槽函数
+	 */
+	void slotAddNewDischarger(bool&);
+
+	/*!
+	 * @brief 删除分盘机
+	 * @arg bool& 删除成功返回true,否则返回false
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 删除分盘机按钮释放时触发的槽函数
+	 */
+	void slotDeleteDischarger(bool&);
+
+	/*!
+	 * @brief 编辑分盘机
+	 * @arg bool& 修改成功返回true,否则返回false
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 修改分盘机按钮释放时触发的槽函数
+	 */
+	void slotEditDischarger(bool&);
+
+	/*!
+	 * @brief 添加新的分捡台
+	 * @arg bool& 添加成功返回true,否则返回false
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 添加分捡台按钮释放时触发的槽函数
+	 */
+	void slotAddNewSortTable(bool&);
+
+	/*!
+	 * @brief 删除分捡台
+	 * @arg bool& 删除成功返回true,否则返回false
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 删除分捡台按钮释放时触发的槽函数
+	 */
+	void slotDeleteSortTable(bool&);
+
+	/*!
+	 * @brief 编辑分捡台
+	 * @arg bool& 修改成功返回true,否则返回false
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 编辑分捡台按钮释放时触发的槽函数
+	 */
+	void slotEditSortTable(bool&);
+
+	/*!
+	 * @brief 添加出货口
+	 * @arg bool& 添加成功返回true,否则返回false
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 添加出货口按钮释放时触发的槽函数
+	 */
+	void slotAddNewShipmentPort(bool&);
+
+	/*!
+	 * @brief 删除出货口
+	 * @arg bool& 删除成功返回true,否则返回false
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 删除出货口按钮释放时触发的槽函数
+	 */
+	void slotDeleteShipmentPort(bool&);
+
+	/*!
+	 * @brief 编辑出货口
+	 * @arg bool& 修改成功返回true,否则返回false
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 编辑出货口按钮释放时触发的槽函数
+	 */
+	void slotEditShipmentPort(bool&);
+
+	/*!
+	 * @brief 添加订单
+	 * @arg bool& 添加成功返回true,否则返回false
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 添加订单按钮释放时触发的槽函数
+	 */
+	void slotAddNewOrder(bool&);
+
+	/*!
+	 * @brief 删除订单
+	 * @arg bool& 删除成功返回true,否则返回false
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 删除订单按钮释放时触发的槽函数
+	 */
+	void slotDeleteOrder(bool&);
 };

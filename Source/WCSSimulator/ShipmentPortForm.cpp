@@ -107,11 +107,11 @@ void ShipmentPortForm::PressedAddButton()
 {
 	if (m_byNo <= 0 || m_byNo >= 255)
 	{
-		QMessageBox::critical(this, QString::fromLocal8Bit("添加出货口"), QString::fromLocal8Bit("添加出货口失败！无效的出货口编号。\n注意：分捡台编号仅支持大于0且小于255的值。"));
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加出货口"), QString::fromLocal8Bit("添加出货口失败！无效的出货口编号。\n注意：编号仅支持大于0且小于255的值。"));
 		return;
 	}
 
-	bool _result = true;
+	bool _result = false;
 
 	emit AddNewShipmentPort(_result);
 
@@ -129,11 +129,11 @@ void ShipmentPortForm::PressedDeleteButton()
 {
 	if (m_byNo <= 0 || m_byNo >= 255)
 	{
-		QMessageBox::critical(this, QString::fromLocal8Bit("删除出货口"), QString::fromLocal8Bit("删除出货口失败！无效的分捡台编号。\n注意：出货口编号仅支持大于0且小于255的值。"));
+		QMessageBox::critical(this, QString::fromLocal8Bit("删除出货口"), QString::fromLocal8Bit("删除出货口失败！无效的分捡台编号。\n注意：编号仅支持大于0且小于255的值。"));
 		return;
 	}
 
-	bool _result = true;
+	bool _result = false;
 
 	emit DeleteShipmentPort(_result);
 
@@ -154,11 +154,11 @@ void ShipmentPortForm::PressedEditButton()
 {
 	if (m_byNo <= 0 || m_byNo >= 255)
 	{
-		QMessageBox::critical(this, QString::fromLocal8Bit("编辑出货口"), QString::fromLocal8Bit("编辑出货口失败！无效的分捡台编号。\n注意：出货口编号仅支持大于0且小于255的值。"));
+		QMessageBox::critical(this, QString::fromLocal8Bit("编辑出货口"), QString::fromLocal8Bit("编辑出货口失败！无效的分捡台编号。\n注意：编号仅支持大于0且小于255的值。"));
 		return;
 	}
 
-	bool _result = true;
+	bool _result = false;
 
 	emit EditShipmentPort(_result);
 
@@ -212,7 +212,7 @@ bool ShipmentPortForm::AddNewShipmentPort(quint8 no, QString name, bool full)
 		return false;
 	}
 
-	// 向列表中添加分盘机
+	// 向列表中添加出货口
 	QList<QStandardItem*> _list;
 	_list.push_back(new QStandardItem(QString::fromLocal8Bit("%1").arg(no)));
 	_list.push_back(new QStandardItem(name));
@@ -245,7 +245,7 @@ void ShipmentPortForm::DeleteShipmentPort(quint8 no)
 		return;
 	}
 
-	// 从列表中删除该编号的分盘机
+	// 从列表中删除该编号的出货口
 	for (int i = 0; i < m_model->rowCount(); ++i)
 	{
 		QStandardItem* _aItem = m_model->item(i);
@@ -268,7 +268,7 @@ bool ShipmentPortForm::EditShipmentPort(quint8 no, QString name)
 		return false;
 	}
 
-	// 修改列表中该编号的分盘机属性
+	// 修改列表中该编号的出货口属性
 	for (int i = 0; i < m_model->rowCount(); ++i)
 	{
 		QStandardItem* _aItem = m_model->item(i);
@@ -291,7 +291,7 @@ bool ShipmentPortForm::EditShipmentPort(quint8 no, bool full)
 		return false;
 	}
 
-	// 修改列表中该编号的分盘机属性
+	// 修改列表中该编号的出货口属性
 	for (int i = 0; i < m_model->rowCount(); ++i)
 	{
 		QStandardItem* _aItem = m_model->item(i);
@@ -322,7 +322,7 @@ bool ShipmentPortForm::EditShipmentPort(quint8 no, QString name, bool full)
 		return false;
 	}
 
-	// 修改列表中该编号的分盘机属性
+	// 修改列表中该编号的出货口属性
 	for (int i = 0; i < m_model->rowCount(); ++i)
 	{
 		QStandardItem* _aItem = m_model->item(i);

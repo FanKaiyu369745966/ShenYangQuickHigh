@@ -113,7 +113,7 @@ void DischargerForm::PressedAddButton()
 {
 	if (m_byNo <= 0 || m_byNo >= 255)
 	{
-		QMessageBox::critical(this, QString::fromLocal8Bit("添加分盘机"), QString::fromLocal8Bit("添加分盘机失败！无效的分盘机编号。\n注意：分盘机编号仅支持大于0且小于255的值。"));
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加分盘机"), QString::fromLocal8Bit("添加分盘机失败！无效的分盘机编号。\n注意：编号仅支持大于0且小于255的值。"));
 		return;
 	}
 
@@ -157,7 +157,7 @@ void DischargerForm::PressedDeleteButton()
 {
 	if (m_byNo <= 0 || m_byNo >= 255)
 	{
-		QMessageBox::critical(this, QString::fromLocal8Bit("删除分盘机"), QString::fromLocal8Bit("删除分盘机失败！无效的分盘机编号。\n注意：分盘机编号仅支持大于0且小于255的值。"));
+		QMessageBox::critical(this, QString::fromLocal8Bit("删除分盘机"), QString::fromLocal8Bit("删除分盘机失败！无效的分盘机编号。\n注意：编号仅支持大于0且小于255的值。"));
 		return;
 	}
 
@@ -183,7 +183,7 @@ void DischargerForm::PressedEditButton()
 {
 	if (m_byNo <= 0 || m_byNo >= 255)
 	{
-		QMessageBox::critical(this, QString::fromLocal8Bit("编辑分盘机"), QString::fromLocal8Bit("编辑分盘机失败！无效的分盘机编号。\n注意：分盘机编号仅支持大于0且小于255的值。"));
+		QMessageBox::critical(this, QString::fromLocal8Bit("编辑分盘机"), QString::fromLocal8Bit("编辑分盘机失败！无效的分盘机编号。\n注意：编号仅支持大于0且小于255的值。"));
 		return;
 	}
 

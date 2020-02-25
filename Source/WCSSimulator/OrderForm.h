@@ -39,7 +39,7 @@ public:
 	QString m_strOrder;				/*< 订单号 */
 	QString m_strTray;				/*!< 托盘码 */
 	QStringList m_strlSortTable;	/*!< 分捡台列表 */
-	QString m_strShipmentPort;		/*!< 出货口编号 */
+	quint8 m_byShipmentPort;		/*!< 出货口编号 */
 private:
 	QSet<quint8> m_setSort;			/*!< 分捡台集合 */
 private:
@@ -52,7 +52,9 @@ private:
 	void Initialize();
 
 signals:
-
+	void AddNewOrder(bool&);
+	void DeleteOrder(bool&);
+	//void EditOrder(bool&);
 private slots:
 	/*!
 	 * @brief 点击自动生成按钮
@@ -124,8 +126,38 @@ public:
 	void DeleteSortTable(quint8 no);
 
 	// TODO 添加订单
+	/*!
+	 * @brief 添加订单
+	 * @arg QString 订单号
+	 * @arg QString 托盘码
+	 * @arg quint8 分盘机编号
+	 * @arg QString 分捡台列表
+	 * @arg quint8 出货口编号
+	 * @return bool 添加成功返回true,否则返回false
+	 * @since 2020/2/24 FanKaiyu
+	 * 添加新的订单至订单列表
+	 */
+	bool AddNewOrder(QString no, QString tray, quint8 discharger, QString sorttable, quint8 shipmentport);
 
-	// TODO 删除订单
+	/*!
+	 * @brief 删除订单
+	 * @arg QString 订单号
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 取消执行指定的订单号
+	 */
+	void DeleteOrder(QString no);
 
-	// TODO 更新订单
+	/*!
+	 * @brief 更新订单的状态
+	 * @arg QString 订单号
+	 * @arg QString	执行订单的人员名称
+	 * @arg QString	订单执行的状态
+	 * @arg QString 下单时间
+	 * @arg QString 完成时间
+	 * @return void
+	 * @since 2020/2/24 FanKaiyu
+	 * 更新订单的状态、执行者、时间等信息
+	 */
+	void UpdateOrder(QString no, QString executer, QString status, QString starttime, QString finishtime = "");
 };

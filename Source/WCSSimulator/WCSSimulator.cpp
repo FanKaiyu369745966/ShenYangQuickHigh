@@ -16,6 +16,8 @@ WCSSimulator::WCSSimulator(QWidget* parent)
 	: QMainWindow(parent)
 	, m_wServer(nullptr)
 	, m_wDatabase(nullptr)
+	, m_wDischarger(nullptr)
+	, m_wSortTable(nullptr)
 	, m_server(nullptr)
 	, m_database(QSqlDatabase::addDatabase("QODBC3", "main"))
 {
@@ -51,10 +53,10 @@ void WCSSimulator::Initialize()
 	QWidget* _wMain = new QWidget(this);													/*!< 主窗口中心控件 */
 	m_wDatabase = new DatabaseForm(_dbHost, _dbName, _dbUser, _dbPwd, _wMain);				/*!< 数据库控件 */
 	m_wServer = new ServerForm(_srvAddr, _wMain);											/*!< 服务端控件 */
-	DischargerForm* _wDischarger = new DischargerForm(_wMain);								/*!< 分盘机控件 */
-	SortTableForm* _wSortTable = new SortTableForm(_wMain);									/*!< 分拣台控件 */
-	ShipmentPortForm* _wShipment = new ShipmentPortForm(_wMain);							/*!< 出货口控件 */
-	OrderForm* _wOrder = new OrderForm(_wMain);												/*!< 订单详情控件 */
+	m_wDischarger = new DischargerForm(_wMain);												/*!< 分盘机控件 */
+	m_wSortTable = new SortTableForm(_wMain);												/*!< 分拣台控件 */
+	m_wShipment = new ShipmentPortForm(_wMain);												/*!< 出货口控件 */
+	m_wOrder = new OrderForm(_wMain);														/*!< 订单详情控件 */
 
 	QGroupBox* _groupDatabase = new QGroupBox(QString::fromLocal8Bit("数据库"), this);		/*!< 数据库分组框 */
 	QGroupBox* _groupServer = new QGroupBox(QString::fromLocal8Bit("服务端"), this);		/*!< 服务端分组框 */
@@ -79,10 +81,10 @@ void WCSSimulator::Initialize()
 	// 为分组框布局添加控件
 	_layGroupDatabase->addWidget(m_wDatabase);
 	_layGroupServer->addWidget(m_wServer);
-	_layGroupDischarger->addWidget(_wDischarger);
-	_layGroupSort->addWidget(_wSortTable);
-	_layGroupShipment->addWidget(_wShipment);
-	_layGroupOrder->addWidget(_wOrder);
+	_layGroupDischarger->addWidget(m_wDischarger);
+	_layGroupSort->addWidget(m_wSortTable);
+	_layGroupShipment->addWidget(m_wShipment);
+	_layGroupOrder->addWidget(m_wOrder);
 
 	// 为分组框添加布局
 	_groupDatabase->setLayout(_layGroupDatabase);
@@ -134,6 +136,21 @@ void WCSSimulator::Initialize()
 	QObject::connect(m_wServer, &ServerForm::signalClose, this, &WCSSimulator::slotEndListen);
 	QObject::connect(m_wDatabase, &DatabaseForm::OnButtonLink, this, &WCSSimulator::slotLinkDatabase);
 	QObject::connect(m_wDatabase, &DatabaseForm::OnButtonClose, this, &WCSSimulator::slotCloseDatabase);
+
+	QObject::connect(m_wDischarger, static_cast<void (DischargerForm::*)(bool&)>(&DischargerForm::AddNewDischarger), this, &WCSSimulator::slotAddNewDischarger);
+	QObject::connect(m_wDischarger, static_cast<void (DischargerForm::*)(bool&)>(&DischargerForm::DeleteDischarger), this, &WCSSimulator::slotDeleteDischarger);
+	QObject::connect(m_wDischarger, static_cast<void (DischargerForm::*)(bool&)>(&DischargerForm::EditDischarger), this, &WCSSimulator::slotEditDischarger);
+
+	QObject::connect(m_wSortTable, static_cast<void (SortTableForm::*)(bool&)>(&SortTableForm::AddNewSortTable), this, &WCSSimulator::slotAddNewSortTable);
+	QObject::connect(m_wSortTable, static_cast<void (SortTableForm::*)(bool&)>(&SortTableForm::AddNewSortTable), this, &WCSSimulator::slotDeleteSortTable);
+	QObject::connect(m_wSortTable, static_cast<void (SortTableForm::*)(bool&)>(&SortTableForm::AddNewSortTable), this, &WCSSimulator::slotEditSortTable);
+
+	QObject::connect(m_wShipment, static_cast<void (ShipmentPortForm::*)(bool&)>(&ShipmentPortForm::AddNewShipmentPort), this, &WCSSimulator::slotAddNewShipmentPort);
+	QObject::connect(m_wShipment, static_cast<void (ShipmentPortForm::*)(bool&)>(&ShipmentPortForm::DeleteShipmentPort), this, &WCSSimulator::slotDeleteShipmentPort);
+	QObject::connect(m_wShipment, static_cast<void (ShipmentPortForm::*)(bool&)>(&ShipmentPortForm::EditShipmentPort), this, &WCSSimulator::slotEditShipmentPort);
+
+	QObject::connect(m_wOrder, static_cast<void (OrderForm::*)(bool&)>(&OrderForm::AddNewOrder), this, &WCSSimulator::slotAddNewOrder);
+	QObject::connect(m_wOrder, static_cast<void (OrderForm::*)(bool&)>(&OrderForm::DeleteOrder), this, &WCSSimulator::slotDeleteOrder);
 
 	// 创建子目录
 	QDir _dir(".");
@@ -501,6 +518,104 @@ void WCSSimulator::slotCloseDatabase()
 	{
 		m_database.close();
 	}
+
+	return;
+}
+
+void WCSSimulator::slotAddNewDischarger(bool& result)
+{
+	// TODO 将数据添加进数据库表中
+
+	return;
+}
+
+void WCSSimulator::slotDeleteDischarger(bool& result)
+{
+	// TODO 将数据从数据库表中删除
+
+	return;
+}
+
+void WCSSimulator::slotEditDischarger(bool& result)
+{
+	// TODO 修改数据表中的数据
+
+	return;
+}
+
+void WCSSimulator::slotAddNewSortTable(bool& result)
+{
+	// TODO 将数据添加进数据库表中
+
+	if (result == false)
+	{
+		return;
+	}
+
+	m_wOrder->AddNewSortTable(m_wSortTable->m_byNo);
+
+	return;
+}
+
+void WCSSimulator::slotDeleteSortTable(bool& result)
+{
+	// TODO 将数据从数据库表中删除
+
+	m_wOrder->DeleteSortTable(m_wSortTable->m_byNo);
+
+	return;
+}
+
+void WCSSimulator::slotEditSortTable(bool& result)
+{
+	// TODO 修改数据表中的数据
+
+	return;
+}
+
+void WCSSimulator::slotAddNewShipmentPort(bool& result)
+{
+	// TODO 将数据添加进数据库表中
+
+	return;
+}
+
+void WCSSimulator::slotDeleteShipmentPort(bool& result)
+{
+	// TODO 将数据从数据库表中删除
+
+	return;
+}
+
+void WCSSimulator::slotEditShipmentPort(bool& result)
+{
+	// TODO 修改数据表中的数据
+
+	return;
+}
+
+void WCSSimulator::slotAddNewOrder(bool& result)
+{
+	// TODO 确定数据表中不包含当前订单号的订单
+
+	// TODO 确定分盘机的状态，并为订单分配分盘机
+
+	// TODO 创建订单
+
+
+	QString _sortList = "";
+	for (QStringList::iterator it = m_wOrder->m_strlSortTable.begin(); it != m_wOrder->m_strlSortTable.end(); ++it, _sortList += ";")
+	{
+		_sortList += *it;
+	}
+
+	//m_wOrder->AddNewOrder(m_wOrder->m_strOrder, m_wOrder->m_strTray, , _sortList, m_wOrder->m_byShipmentPort);
+	return;
+}
+
+void WCSSimulator::slotDeleteOrder(bool& result)
+{
+	// TODO 将数据从数据库表中删除
 
 	return;
 }

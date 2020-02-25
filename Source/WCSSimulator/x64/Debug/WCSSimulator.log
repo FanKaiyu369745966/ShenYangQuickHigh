@@ -1,2 +1,4 @@
 ﻿  OrderForm.cpp
+  moc_OrderForm.cpp
+  moc_WCSSimulator.cpp
   WCSSimulator.vcxproj -> G:\Project\Qt\ShenYangQuickHigh\Source\x64\Debug\WCSSimulator.exe

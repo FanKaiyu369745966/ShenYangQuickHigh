@@ -16,7 +16,7 @@ OrderForm::OrderForm(QWidget* parent)
 	, m_model(nullptr)
 	, m_strOrder("")
 	, m_strTray("")
-	, m_strShipmentPort("")
+	, m_byShipmentPort(0)
 {
 	//ui.setupUi(this);
 	Initialize();
@@ -29,7 +29,7 @@ OrderForm::~OrderForm()
 void OrderForm::Initialize()
 {
 	m_pbutAdd = new QPushButton(QString::fromLocal8Bit("添加"), this);						/*!< 添加按钮 */
-	//m_pbutEdit = new QPushButton(QString::fromLocal8Bit("修改"), this);						/*!< 编辑按钮 */
+	//m_pbutEdit = new QPushButton(QString::fromLocal8Bit("修改"), this);					/*!< 编辑按钮 */
 	m_pbutDel = new QPushButton(QString::fromLocal8Bit("删除"), this);						/*!< 删除按钮 */
 	QPushButton* _pbutSel = new QPushButton(QString::fromLocal8Bit("选择"), this);			/*!< 选择按钮 */
 	QLabel* _labNo = new QLabel(QString::fromLocal8Bit("订单号："), this);					/*!< 订单号标签 */
@@ -155,17 +155,63 @@ void OrderForm::EditFinished()
 	m_strOrder = m_leditNo->text();
 	m_strTray = m_leditTary->text();
 	m_strlSortTable = m_leditSort->text().split(';');
-	m_strShipmentPort = m_leditShipment->text();
+	m_byShipmentPort = m_leditShipment->text().toInt();
 
 	return;
 }
 
 void OrderForm::PressedAddButton()
 {
+	if (m_strOrder.isNull() || m_strOrder.isEmpty())
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！无效的订单编号。"));
+		return;
+	}
+
+	if (m_strlSortTable.size() == 0)
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！未选择分捡台。"));
+		return;
+	}
+
+	if (m_byShipmentPort <= 0 || m_byShipmentPort >= 255)
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！无效的出货口编号。\n注意：编号仅支持大于0且小于255的值。"));
+		return;
+	}
+
+	bool _result = false;
+
+	emit AddNewOrder(_result);
+
+	return;
 }
 
 void OrderForm::PressedDeleteButton()
 {
+	if (m_strOrder.isNull() || m_strOrder.isEmpty())
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("删除订单"), QString::fromLocal8Bit("删除订单失败！无效的订单编号。"));
+		return;
+	}
+
+	bool _result = false;
+
+	emit DeleteOrder(_result);
+
+	if (_result == false)
+	{
+		return;
+	}
+
+	DeleteOrder(m_strOrder);
+
+	m_strOrder = m_leditNo->text();
+	m_strTray = m_leditTary->text();
+	m_strlSortTable = m_leditSort->text().split(';');
+	m_byShipmentPort = m_leditShipment->text().toInt();
+
+	return;
 }
 
 void OrderForm::OnSelectItem(const QModelIndex& current, const QModelIndex& previous)
@@ -186,7 +232,7 @@ void OrderForm::OnSelectItem(const QModelIndex& current, const QModelIndex& prev
 	m_strOrder = m_leditNo->text();
 	m_strTray = m_leditTary->text();
 	m_strlSortTable = m_leditSort->text().split(';');
-	m_strShipmentPort = m_leditShipment->text();
+	m_byShipmentPort = m_leditShipment->text().toInt();
 
 	return;
 }
@@ -294,6 +340,104 @@ void OrderForm::DeleteSortTable(quint8 no)
 	}
 
 	m_setSort.erase(m_setSort.find(no));
+
+	return;
+}
+
+bool OrderForm::AddNewOrder(QString no, QString tray, quint8 discharger, QString sorttable, quint8 shipmentport)
+{
+	if (no.isNull() || no.isEmpty())
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！无效的订单编号。"));
+		return false;
+	}
+
+	if (sorttable.isNull() || sorttable.isEmpty() == 0)
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！未选择分捡台。"));
+		return false;
+	}
+
+	if (shipmentport <= 0 || shipmentport >= 255)
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！无效的出货口编号。\n注意：编号仅支持大于0且小于255的值。"));
+		return false;
+	}
+
+	if (discharger <= 0 || discharger >= 255)
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！无效的分盘机编号。\n注意：编号仅支持大于0且小于255的值。"));
+		return false;
+	}
+
+
+	// 向列表中添加出货口
+	QList<QStandardItem*> _list;
+	_list.push_back(new QStandardItem(no));
+	_list.push_back(new QStandardItem(tray));
+	_list.push_back(new QStandardItem(QString::fromLocal8Bit("%1").arg(discharger)));
+	_list.push_back(new QStandardItem(sorttable));
+	_list.push_back(new QStandardItem(QString::fromLocal8Bit("%1").arg(shipmentport)));
+	_list.push_back(new QStandardItem(""));
+	_list.push_back(new QStandardItem(QString::fromLocal8Bit("未执行")));
+
+	m_model->appendRow(_list);
+
+	for (QList<QStandardItem*>::iterator it = _list.begin(); it != _list.end(); ++it)
+	{
+		(*it)->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+		(*it)->setEditable(false);
+		(*it)->setToolTip((*it)->text());
+	}
+
+	return true;
+}
+
+void OrderForm::DeleteOrder(QString no)
+{
+	if (no.isNull() || no.isEmpty())
+	{
+		return;
+	}
+
+	// 从列表中删除该编号的订单
+	for (int i = 0; i < m_model->rowCount(); ++i)
+	{
+		QStandardItem* _aItem = m_model->item(i);
+
+		if (_aItem->text() == no)
+		{
+			m_model->removeRow(i);
+
+			return;
+		}
+	}
+
+	return;
+}
+
+void OrderForm::UpdateOrder(QString no, QString executer, QString status, QString starttime, QString finishtime)
+{
+	if (no.isNull() || no.isEmpty())
+	{
+		return;
+	}
+
+	// 从列表中删除该编号的订单
+	for (int i = 0; i < m_model->rowCount(); ++i)
+	{
+		QStandardItem* _aItem = m_model->item(i);
+
+		if (_aItem->text() != no)
+		{
+			continue;
+		}
+
+		m_model->item(i, 5)->setText(executer);
+		m_model->item(i, 6)->setText(status);
+		m_model->item(i, 7)->setText(starttime);
+		m_model->item(i, 8)->setText(finishtime);
+	}
 
 	return;
 }
