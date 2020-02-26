@@ -66,12 +66,13 @@ void DischargerForm::Initialize()
 	// 为模板设置列头
 	int _index = 0;
 	// 为分盘机模板设置列头
-	m_model->setColumnCount(5);
+	m_model->setColumnCount(6);
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("序号"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("地址"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("模式"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("连接"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("状态"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("请求"));
 
 	_table->setModel(m_model);
 	_table->setSelectionMode(QAbstractItemView::SelectionMode::SingleSelection);
@@ -296,6 +297,7 @@ bool DischargerForm::AddNewDischarger(quint8 no, QString addr, quint16 port, boo
 
 	_list.push_back(new QStandardItem(QString::fromLocal8Bit("未连接")));
 	_list.push_back(new QStandardItem(Discharger::status(Discharger::NotReady)));
+	_list.push_back(new QStandardItem(QString::fromLocal8Bit("未请求")));
 
 	m_model->appendRow(_list);
 
@@ -464,6 +466,47 @@ void DischargerForm::Update(quint8 no, quint8 status)
 	return;
 }
 
+void DischargerForm::Update(quint8 no, bool request, QString order)
+{
+	if (no <= 0 || no >= 255)
+	{
+		return;
+	}
+
+	// 修改列表中该编号的分盘机属性
+	for (int i = 0; i < m_model->rowCount(); ++i)
+	{
+		QStandardItem* _aItem = m_model->item(i);
+
+		if (_aItem->text().toInt() != no)
+		{
+			continue;
+		}
+
+		QString _str = "";
+
+		if (request == false)
+		{
+			if (order.isNull() || order.isEmpty())
+			{
+				_str = QString::fromLocal8Bit("未请求");
+			}
+			else
+			{
+				_str = QString::fromLocal8Bit("正在发送请求(%1)").arg(order);
+			}
+		}
+		else
+		{
+			_str = QString::fromLocal8Bit("已收到回复(%1)").arg(order);
+		}
+
+		m_model->item(i, 5)->setText(_str);
+	}
+
+	return;
+}
+
 void DischargerForm::Clear()
 {
 	m_model->clear();
@@ -471,12 +514,13 @@ void DischargerForm::Clear()
 	// 为模板设置列头
 	int _index = 0;
 	// 为分盘机模板设置列头
-	m_model->setColumnCount(5);
+	m_model->setColumnCount(6);
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("序号"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("地址"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("模式"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("连接"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("状态"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("请求"));
 
 	return;
 }

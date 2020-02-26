@@ -21,9 +21,22 @@ WCSSimulator::WCSSimulator(QWidget* parent)
 	, m_wSortTable(nullptr)
 	, m_server(nullptr)
 	, m_database(QSqlDatabase::addDatabase("QODBC3"))
+	, m_nCount(0)
 {
 	//ui.setupUi(this);
+
+	m_timer.setInterval(1000);
+
+	moveToThread(&m_thread);
+	m_thread.start();
+
+	QObject::connect(&m_timer, &QTimer::timeout, this, &WCSSimulator::slotThread);
+
+	m_timer.start();
+
 	Initialize();
+
+
 }
 
 void WCSSimulator::Initialize()
@@ -96,9 +109,9 @@ void WCSSimulator::Initialize()
 	_groupOrder->setLayout(_layGroupOrder);
 
 	// 为设备信息控件布局添加控件
-	_layGroup->addWidget(_groupDischarger, 0, 0);
-	_layGroup->addWidget(_groupSort, 0, 1);
-	_layGroup->addWidget(_groupShipment, 0, 2);
+	_layGroup->addWidget(_groupDischarger, 0, 0, 1, 2);
+	_layGroup->addWidget(_groupSort, 1, 0);
+	_layGroup->addWidget(_groupShipment, 1, 1);
 
 	// 设置分组框布局比例
 	//_layGroup->setColumnStretch(0, 2);
@@ -217,6 +230,10 @@ QString WCSSimulator::GetCurrentTime()
 
 void WCSSimulator::closeEvent(QCloseEvent* event)
 {
+	m_thread.quit();
+	m_thread.wait();
+	m_timer.stop();
+
 	slotSave();
 	event->accept();
 
@@ -236,8 +253,10 @@ disc_no int not null primary key,\
 disc_addr nvarchar(50) not null,\
 disc_port int not null default 0,\
 disc_client bit not null default 1,\
-disc_status int not null default 0\
-);\
+disc_status int not null default 0,\
+disc_request bit not null default 0,\
+disc_order nvarchar(50) null\
+); \
 ");
 
 	if (_query.exec(_sql) == false)
@@ -330,7 +349,13 @@ void WCSSimulator::LoadDatabase()
 	m_wSortTable->Clear();
 	m_wShipment->Clear();
 
-	// TODO 删除分盘机
+	// 删除分盘机
+	for (QMap<quint8, Discharger*>::iterator it = m_mapDischarger.begin(); it != m_mapDischarger.end(); it = m_mapDischarger.erase(it))
+	{
+		it.value()->Disconnect();
+
+		it.value()->deleteLater();
+	}
 
 	QSqlQuery _query(m_database);
 
@@ -345,11 +370,22 @@ void WCSSimulator::LoadDatabase()
 			quint16 _port = _query.value("disc_port").toInt();
 			bool _client = _query.value("disc_client").toBool();
 			quint8 _status = _query.value("disc_status").toInt();
+			bool _request = _query.value("disc_request").toBool();
+			QString _order = _query.value("disc_request").toString();
+
+			// 添加分盘机
+			if (m_mapDischarger.find(_no) != m_mapDischarger.end())
+			{
+				continue;
+			}
+
+			m_mapDischarger[_no] = new Discharger(_no, _addr, _port, _client, _order, _request, this);
+
+			QObject::connect(m_mapDischarger[_no], &Discharger::Update, this, &WCSSimulator::slotUpdateDischarger);
 
 			m_wDischarger->AddNewDischarger(_no, _addr, _port, _client);
 			m_wDischarger->Update(_no, _status);
-
-			// TODO 添加分盘机
+			m_wDischarger->Update(_no, _request, _order);
 		}
 	}
 
@@ -522,11 +558,27 @@ void WCSSimulator::slotNewConnection()
 
 		_out << QString::fromLocal8Bit("%1 连线客户端：[%2:%3]").arg(_curTime).arg(_socket->peerAddress().toString()).arg(_socket->peerPort()) << endl;
 
-		// TODO 连接分盘机
+		// 连接分盘机
+		bool _connected = false;
 
-		_out << QString::fromLocal8Bit("%1 客户端：[%2:%3]离线").arg(_curTime).arg(_socket->peerAddress().toString()).arg(_socket->peerPort()) << endl;
+		for (QMap<quint8, Discharger*>::iterator it = m_mapDischarger.begin(); it != m_mapDischarger.end(); ++it)
+		{
+			if (it.value()->Connect(_socket) == false)
+			{
+				continue;
+			}
 
-		_socket->close();
+			_connected = true;
+
+			break;
+		}
+
+		if (_connected == false)
+		{
+			_out << QString::fromLocal8Bit("%1 客户端：[%2:%3]离线").arg(_curTime).arg(_socket->peerAddress().toString()).arg(_socket->peerPort()) << endl;
+
+			_socket->close();
+		}
 	}
 
 	_fileSrvLog.close();
@@ -716,7 +768,18 @@ void WCSSimulator::slotAddNewDischarger(bool& result)
 		return;
 	}
 
-	// TODO 添加分盘机
+	// 添加分盘机
+	if (m_mapDischarger.find(m_wDischarger->m_byNo) != m_mapDischarger.end())
+	{
+		m_mapDischarger[m_wDischarger->m_byNo]->SetAddress(m_wDischarger->m_strAddr);
+		m_mapDischarger[m_wDischarger->m_byNo]->SetMode(m_wDischarger->m_bClient);
+
+		return;
+	}
+
+	m_mapDischarger[m_wDischarger->m_byNo] = new Discharger(m_wDischarger->m_byNo, _addr, _port, m_wDischarger->m_bClient, "", false, this);
+
+	QObject::connect(m_mapDischarger[m_wDischarger->m_byNo], &Discharger::Update, this, &WCSSimulator::slotUpdateDischarger);
 
 	return;
 }
@@ -736,7 +799,16 @@ void WCSSimulator::slotDeleteDischarger(bool& result)
 		return;
 	}
 
-	// TODO 删除分盘机
+	// 删除分盘机
+	if (m_mapDischarger.find(m_wDischarger->m_byNo) == m_mapDischarger.end())
+	{
+		return;
+	}
+
+	m_mapDischarger[m_wDischarger->m_byNo]->Disconnect();
+	m_mapDischarger[m_wDischarger->m_byNo]->deleteLater();
+
+	m_mapDischarger.erase(m_mapDischarger.find(m_wDischarger->m_byNo));
 
 	return;
 }
@@ -763,7 +835,14 @@ void WCSSimulator::slotEditDischarger(bool& result)
 		return;
 	}
 
-	// TODO 修改分盘机属性
+	// 修改分盘机属性
+	if (m_mapDischarger.find(m_wDischarger->m_byNo) == m_mapDischarger.end())
+	{
+		return;
+	}
+
+	m_mapDischarger[m_wDischarger->m_byNo]->SetAddress(m_wDischarger->m_strAddr);
+	m_mapDischarger[m_wDischarger->m_byNo]->SetMode(m_wDischarger->m_bClient);
 
 	return;
 }
@@ -978,7 +1057,42 @@ void WCSSimulator::slotAddNewOrder(bool& result)
 		return;
 	}
 
-	// TODO 确定分盘机的状态，并为订单分配分盘机
+	// 确定分盘机的状态，并为订单分配分盘机
+	for (int index = m_nCount + 1; ; ++index)
+	{
+		if (index == 255)
+		{
+			index = 0;
+		}
+
+		if (index == m_nCount)
+		{
+			break;
+		}
+
+		if (index == 0)
+		{
+			continue;
+		}
+
+		if (m_mapDischarger.find(index) == m_mapDischarger.end())
+		{
+			continue;
+		}
+
+		Discharger* _disc = m_mapDischarger[index];
+		quint8 _status = _disc->GetStatus();
+
+		if (_status == Discharger::NotReady || _disc->IsConnected() == false)
+		{
+			continue;
+		}
+
+		_discharger = index;
+		m_nCount = _discharger;
+
+		break;
+	}
 
 	// 创建订单
 	if (_discharger == 0)
@@ -1092,6 +1206,71 @@ void WCSSimulator::slotDeleteOrder(bool& result)
 
 		return;
 	}
+
+	return;
+}
+
+void WCSSimulator::slotThread()
+{
+	if (m_database.isOpen() == false)
+	{
+		return;
+	}
+
+	m_wOrder->UpdateData();
+
+	QSqlQuery _query(QString::fromLocal8Bit("select * from AGVDB_TASK_CURRENT where task_mission='%1' and task_status='%2' order by task_publish")
+		.arg(QString::fromLocal8Bit("上料"))
+		.arg(QString::fromLocal8Bit("执行中"))
+		, m_database);
+
+	while (_query.next())
+	{
+		QString _order = _query.value("task_order").toString();
+		QString _name = _query.value("task_target").toString();
+
+		quint8 _no = _name.section(QString::fromLocal8Bit("分盘机"), -1, -1).toInt();
+
+		if (m_mapDischarger.find(_no) == m_mapDischarger.end())
+		{
+			continue;
+		}
+
+		m_mapDischarger[_no]->RequestTray(_order);
+	}
+
+	return;
+}
+
+void WCSSimulator::slotUpdateDischarger(quint8 no)
+{
+	if (m_mapDischarger.find(no) == m_mapDischarger.end())
+	{
+		return;
+	}
+
+	QSqlQuery _query(m_database);
+
+	QString _order = "";
+	bool _request = m_mapDischarger[no]->IsRequested(_order);
+	bool _connect = m_mapDischarger[no]->IsConnected();
+	quint8 _status = m_mapDischarger[no]->GetStatus();
+
+	QString _sql = QString("update WCS_INFO_DISCHARGER set disc_status=%1,disc_request=%2,disc_order='%3' where disc_no=%4")
+		.arg(_status)
+		.arg(_request)
+		.arg(_order)
+		.arg(no);
+
+	if (_query.exec(_sql) == false)
+	{
+		qDebug() << "update WCS_INFO_DISCHARGER failed:" << _query.lastError().text();
+		return;
+	}
+
+	m_wDischarger->Update(no, _status);
+	m_wDischarger->Update(no, _connect);
+	m_wDischarger->Update(no, _request, _order);
 
 	return;
 }

@@ -177,6 +177,15 @@ public:
 	bool IsRequested() const;
 
 	/*!
+	 * @brief 判断分盘机是否已经回复请求
+	 * @arg QString
+	 * @return bool
+	 * @since 2020/2/26 FanKaiyu
+	 * 返回请求标识的值，以及发出请求的订单号码
+	 */
+	bool IsRequested(QString&) const;
+
+	/*!
 	 * @brief 连接设备
 	 * @arg QTcpSocket*	指向客户端的SOCKET指针
 	 * @return bool 连接客户端返回true,否则返回false
@@ -184,6 +193,10 @@ public:
 	 * 设备为客户端，服务端接受客户端的请求，并验证客户端与设备信息是否匹配
 	 */
 	bool Connect(QTcpSocket*);
+
+	void Disconnect();
+
+	quint8 GetNo() const { return m_no; }
 signals:
 	/*!
 	 * @brief 分盘机更新信号
@@ -191,7 +204,7 @@ signals:
 	 * @since 2020/2/10 FanKaiyu
 	 * 当分盘机状态发生改变时，发出此信号。
 	 */
-	void Update();
+	void Update(quint8);
 private slots:
 	/*!
 	 * @brief 读取数据

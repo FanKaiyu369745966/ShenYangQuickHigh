@@ -173,7 +173,7 @@ void Discharger::Answer(const QByteArrayList& list)
 			// 更新分盘机状态
 			m_status = _param;
 
-			emit Update();
+			emit Update(m_no);
 			break;
 		}
 		case 0x2F:
@@ -184,7 +184,7 @@ void Discharger::Answer(const QByteArrayList& list)
 			m_requested = true;
 			//m_timer.stop();
 
-			emit Update();
+			emit Update(m_no);
 
 			break;
 		}
@@ -207,7 +207,7 @@ void Discharger::RequestTray(const QString& order)
 
 	//m_timer.start();
 
-	emit Update();
+	emit Update(m_no);
 
 	return;
 }
@@ -218,7 +218,7 @@ void Discharger::ResetRequest()
 
 	//m_timer.start();
 
-	emit Update();
+	emit Update(m_no);
 
 	return;
 }
@@ -359,6 +359,13 @@ bool Discharger::IsRequested() const
 	return m_requested;
 }
 
+bool Discharger::IsRequested(QString& order) const
+{
+	order = m_order;
+
+	return m_requested;
+}
+
 bool Discharger::Connect(QTcpSocket* socket)
 {
 	if (socket == nullptr)
@@ -403,6 +410,18 @@ bool Discharger::Connect(QTcpSocket* socket)
 	return true;
 }
 
+void Discharger::Disconnect()
+{
+	if (m_socket)
+	{
+		m_socket->close();
+
+		m_socket = nullptr;
+	}
+
+	return;
+}
+
 void Discharger::slotDisconnected()
 {
 	if (!m_client)
@@ -410,14 +429,14 @@ void Discharger::slotDisconnected()
 		m_socket->deleteLater();
 	}
 
-	emit Update();
+	emit Update(m_no);
 
 	return;
 }
 
 void Discharger::slotConnected()
 {
-	emit Update();
+	emit Update(m_no);
 
 	return;
 }
@@ -520,7 +539,7 @@ void Discharger::slotError(QAbstractSocket::SocketError error)
 		break;
 	}
 
-	emit Update();
+	emit Update(m_no);
 
 	return;
 }
@@ -585,7 +604,7 @@ void Discharger::slotConnect()
 		{
 			m_status = AddressError;
 
-			emit Update();
+			emit Update(m_no);
 		}
 
 		return;
@@ -600,7 +619,7 @@ void Discharger::slotConnect()
 		{
 			m_status = PortError;
 
-			emit Update();
+			emit Update(m_no);
 		}
 
 		return;

@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QThread>
 #include <QTimer>
+#include <QMap>
 #include "ServerForm.h"
 #include "DischargerForm.h"
 #include "SortTableForm.h"
@@ -35,6 +36,10 @@ private:
 private:
 	QTcpServer* m_server;
 	QSqlDatabase m_database;
+	QMap<quint8, Discharger*> m_mapDischarger;
+	QThread m_thread;
+	QTimer m_timer;
+	int m_nCount;
 private:
 	/*!
 	 * @brief 初始化主窗口
@@ -243,4 +248,8 @@ private slots:
 	 * 删除订单按钮释放时触发的槽函数
 	 */
 	void slotDeleteOrder(bool&);
+
+	void slotThread();
+
+	void slotUpdateDischarger(quint8);
 };

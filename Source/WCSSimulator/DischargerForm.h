@@ -194,5 +194,16 @@ public:
 	 */
 	void Update(quint8 no, quint8 status);
 
+	/*!
+	 * @brief 更新分盘机状态
+	 * @arg quint8
+	 * @arg bool
+	 * @arg QString
+	 * @return void
+	 * @since 2020/2/26 FanKaiyu
+	 * 更新分盘机的请求状态
+	 */
+	void Update(quint8 no, bool request, QString order);
+
 	void Clear();
 };
