@@ -34,6 +34,7 @@ private:
 	QPushButton* m_pbutAdd;
 	QPushButton* m_pbutEdit;
 	QPushButton* m_pbutDel;
+	QPushButton* m_pbutReset;
 	QStandardItemModel* m_model;
 public:
 	quint8 m_byNo;
@@ -55,6 +56,8 @@ signals:
 	void DeleteDischarger(bool&);
 
 	void EditDischarger(bool&);
+
+	void ResetDischargerOrder(bool&);
 
 private slots:
 	/*!
@@ -97,6 +100,8 @@ private slots:
 	 * 编辑按钮释放时触发的槽函数
 	 */
 	void PressedEditButton();
+
+	void PressedResetButton();
 
 	/*!
 	 * @brief 选择Item

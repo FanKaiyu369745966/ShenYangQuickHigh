@@ -1,2 +1,12 @@
-﻿  WCSSimulator.cpp
+﻿  moc WCSSimulator.h
+  moc OrderForm.h
+  moc Discharger.h
+  Discharger.cpp
+  DischargerForm.cpp
+  OrderForm.cpp
+  WCSSimulator.cpp
+  main.cpp
+  moc_Discharger.cpp
+  moc_OrderForm.cpp
+  moc_WCSSimulator.cpp
   WCSSimulator.vcxproj -> G:\Project\Qt\ShenYangQuickHigh\Source\x64\Debug\WCSSimulator.exe

@@ -39,7 +39,7 @@ private:
 private:
 	QByteArray m_buffer;	/*!< 数据接收的缓存区  */
 	QTcpSocket* m_socket;	/*!< TCP远程端通信指针 */
-private:
+public:
 	QString m_order;		/*!< 订单号：正在处理该订单号的请求 */
 	bool m_requested;		/*!< 已请求标识：为true表示订单请求已接收处理,为false表示订单请求未处理 */
 private:
@@ -197,6 +197,8 @@ public:
 	void Disconnect();
 
 	quint8 GetNo() const { return m_no; }
+
+	void ClearOrder() { m_order.clear(); m_order = ""; return; }
 signals:
 	/*!
 	 * @brief 分盘机更新信号

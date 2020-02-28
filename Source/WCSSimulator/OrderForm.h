@@ -36,6 +36,7 @@ private:
 	QPushButton* m_pbutDel;
 	QLineEdit* m_leditNo;
 	QLineEdit* m_leditTary;
+	//QLineEdit* m_leditDischarger;
 	QLineEdit* m_leditSort;
 	QLineEdit* m_leditShipment;
 	QTableView* m_table;
@@ -43,11 +44,12 @@ private:
 public:
 	QString m_strOrder;					/*< 订单号 */
 	QString m_strTray;					/*!< 托盘码 */
-	QStringList m_strlSortTable;			/*!< 分捡台列表 */
-	quint8 m_byShipmentPort;				/*!< 出货口编号 */
+	QStringList m_strlSortTable;		/*!< 分捡台列表 */
+	quint8 m_byShipmentPort;			/*!< 出货口编号 */
+	//quint8 m_byDischarger;				/*!< 分盘机编号 */
 private:
 	QSqlDatabase m_database;
-	QMap<quint8, QString> m_mapSort;		/*!< 分捡台集合 */
+	QMap<quint8, QString> m_mapSort;	/*!< 分捡台集合 */
 	bool m_bSearch;						/*!< 搜索标识 */
 private:
 	/*!

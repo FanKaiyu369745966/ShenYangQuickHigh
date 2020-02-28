@@ -21,7 +21,6 @@ WCSSimulator::WCSSimulator(QWidget* parent)
 	, m_wSortTable(nullptr)
 	, m_server(nullptr)
 	, m_database(QSqlDatabase::addDatabase("QODBC3"))
-	, m_nCount(0)
 {
 	//ui.setupUi(this);
 
@@ -154,6 +153,7 @@ void WCSSimulator::Initialize()
 	QObject::connect(m_wDischarger, static_cast<void (DischargerForm::*)(bool&)>(&DischargerForm::AddNewDischarger), this, &WCSSimulator::slotAddNewDischarger);
 	QObject::connect(m_wDischarger, static_cast<void (DischargerForm::*)(bool&)>(&DischargerForm::DeleteDischarger), this, &WCSSimulator::slotDeleteDischarger);
 	QObject::connect(m_wDischarger, static_cast<void (DischargerForm::*)(bool&)>(&DischargerForm::EditDischarger), this, &WCSSimulator::slotEditDischarger);
+	QObject::connect(m_wDischarger, static_cast<void (DischargerForm::*)(bool&)>(&DischargerForm::ResetDischargerOrder), this, &WCSSimulator::slotResetDischargerOrder);
 
 	QObject::connect(m_wSortTable, static_cast<void (SortTableForm::*)(bool&)>(&SortTableForm::AddNewSortTable), this, &WCSSimulator::slotAddNewSortTable);
 	QObject::connect(m_wSortTable, static_cast<void (SortTableForm::*)(bool&)>(&SortTableForm::DeleteSortTable), this, &WCSSimulator::slotDeleteSortTable);
@@ -1057,39 +1057,22 @@ void WCSSimulator::slotAddNewOrder(bool& result)
 		return;
 	}
 
-	// 确定分盘机的状态，并为订单分配分盘机
-	for (int index = m_nCount + 1; ; ++index)
+	// 确保分盘机已经准备就绪,并可以接收新的订单
+	for (QMap<quint8, Discharger*>::iterator it = m_mapDischarger.begin(); it != m_mapDischarger.end(); ++it)
 	{
-		if (index == 255)
-		{
-			index = 0;
-		}
+		Discharger* _disc = it.value();
 
-		if (index == m_nCount)
-		{
-			break;
-		}
-
-		if (index == 0)
+		if (_disc->GetStatus() != Discharger::AllReady)
 		{
 			continue;
 		}
 
-		if (m_mapDischarger.find(index) == m_mapDischarger.end())
+		if (_disc->m_order.isNull() == false && _disc->m_order.isEmpty() == false)
 		{
 			continue;
 		}
 
-		Discharger* _disc = m_mapDischarger[index];
-		quint8 _status = _disc->GetStatus();
-
-		if (_status == Discharger::NotReady || _disc->IsConnected() == false)
-		{
-			continue;
-		}
-
-		_discharger = index;
-		m_nCount = _discharger;
+		_discharger = _disc->GetNo();
 
 		break;
 	}
@@ -1186,6 +1169,13 @@ void WCSSimulator::slotAddNewOrder(bool& result)
 		return;
 	}
 
+	if (m_mapDischarger.find(_discharger) != m_mapDischarger.end())
+	{
+		m_mapDischarger[_discharger]->m_order = m_wOrder->m_strOrder;
+
+		slotUpdateDischarger(m_mapDischarger[_discharger]->GetNo());
+	}
+
 	return;
 }
 
@@ -1194,7 +1184,7 @@ void WCSSimulator::slotDeleteOrder(bool& result)
 	// 将数据从数据库表中删除
 	QSqlQuery _query(m_database);
 
-	QString _sql = QString::fromLocal8Bit("update AGVDB_TASK_CURRENT set task_status='%1',task_finish=getdate() where task_order=%2")
+	QString _sql = QString::fromLocal8Bit("update AGVDB_TASK_CURRENT set task_status='%1',task_finish=getdate() where task_order='%2'")
 		.arg(QString::fromLocal8Bit("取消订单"))
 		.arg(m_wOrder->m_strOrder);
 
@@ -1219,24 +1209,44 @@ void WCSSimulator::slotThread()
 
 	m_wOrder->UpdateData();
 
-	QSqlQuery _query(QString::fromLocal8Bit("select * from AGVDB_TASK_CURRENT where task_mission='%1' and task_status='%2' order by task_publish")
-		.arg(QString::fromLocal8Bit("上料"))
-		.arg(QString::fromLocal8Bit("执行中"))
-		, m_database);
+	// 分盘机订单跟踪
 
-	while (_query.next())
+	QSqlQuery _query(m_database);
+
+	QString _sql = "";
+
+	for (QMap<quint8, Discharger*>::iterator it = m_mapDischarger.begin(); it != m_mapDischarger.end(); ++it)
 	{
-		QString _order = _query.value("task_order").toString();
-		QString _name = _query.value("task_target").toString();
+		Discharger* _disc = it.value();
 
-		quint8 _no = _name.section(QString::fromLocal8Bit("分盘机"), -1, -1).toInt();
-
-		if (m_mapDischarger.find(_no) == m_mapDischarger.end())
+		if (_disc->m_order.isNull() || _disc->m_order.isEmpty())
 		{
 			continue;
 		}
 
-		m_mapDischarger[_no]->RequestTray(_order);
+		_sql = QString::fromLocal8Bit("select * from AGVDB_TASK_CURRENT where task_order='%1' and task_mission='%2'")
+			.arg(m_wOrder->m_strOrder)
+			.arg(QString::fromLocal8Bit("上料"));
+
+		if (_query.exec(_sql) == false)
+		{
+			qDebug() << _query.lastError().text();
+
+			continue;
+		}
+
+		if (_query.next())
+		{
+			continue;
+		}
+
+		if (_disc->GetStatus() != Discharger::AllReady)
+		{
+			_disc->m_order.clear();
+			_disc->m_order = "";
+
+			slotUpdateDischarger(_disc->GetNo());
+		}
 	}
 
 	return;
@@ -1271,6 +1281,20 @@ void WCSSimulator::slotUpdateDischarger(quint8 no)
 	m_wDischarger->Update(no, _status);
 	m_wDischarger->Update(no, _connect);
 	m_wDischarger->Update(no, _request, _order);
+
+	return;
+}
+
+void WCSSimulator::slotResetDischargerOrder(bool&)
+{
+	if (m_mapDischarger.find(m_wDischarger->m_byNo) == m_mapDischarger.end())
+	{
+		return;
+	}
+
+	m_mapDischarger[m_wDischarger->m_byNo]->ClearOrder();
+
+	slotUpdateDischarger(m_wDischarger->m_byNo);
 
 	return;
 }

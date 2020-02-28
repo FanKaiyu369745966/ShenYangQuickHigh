@@ -14,11 +14,15 @@ OrderForm::OrderForm(QWidget* parent)
 	, m_pbutDel(nullptr)
 	, m_leditNo(nullptr)
 	, m_leditTary(nullptr)
+	//, m_leditDischarger(nullptr)
+	, m_leditSort(nullptr)
+	, m_leditShipment(nullptr)
 	, m_table(nullptr)
 	, m_model(nullptr)
 	, m_strOrder("")
 	, m_strTray("")
 	, m_byShipmentPort(0)
+	//, m_byDischarger(0)
 	, m_database(QSqlDatabase::addDatabase("QODBC3", "Order"))
 	, m_bSearch(false)
 {
@@ -37,11 +41,13 @@ void OrderForm::Initialize()
 	m_pbutDel = new QPushButton(QString::fromLocal8Bit("删除"), this);						/*!< 删除按钮 */
 	QPushButton* _pbutSel = new QPushButton(QString::fromLocal8Bit("选择"), this);			/*!< 选择按钮 */
 	QLabel* _labNo = new QLabel(QString::fromLocal8Bit("订单号："), this);					/*!< 订单号标签 */
-	QLabel* _labTray = new QLabel(QString::fromLocal8Bit("托盘码："), this);					/*!< 托盘码标签 */
-	QLabel* _labSort = new QLabel(QString::fromLocal8Bit("分拣台："), this);					/*!< 分拣台标签 */
-	QLabel* _labShipment = new QLabel(QString::fromLocal8Bit("出货口："), this);				/*!< 出货口标签 */
-	m_leditNo = new QLineEdit(this);															/*!< 订单号编辑框 */
+	QLabel* _labTray = new QLabel(QString::fromLocal8Bit("托盘码："), this);				/*!< 托盘码标签 */
+	//QLabel* _labDischarger = new QLabel(QString::fromLocal8Bit("分盘机："), this);			/*!< 分盘机标签 */
+	QLabel* _labSort = new QLabel(QString::fromLocal8Bit("分拣台："), this);				/*!< 分拣台标签 */
+	QLabel* _labShipment = new QLabel(QString::fromLocal8Bit("出货口："), this);			/*!< 出货口标签 */
+	m_leditNo = new QLineEdit(this);														/*!< 订单号编辑框 */
 	m_leditTary = new QLineEdit(this);														/*!< 托盘码编辑框 */
+	//m_leditDischarger = new QLineEdit(this);												/*!< 分盘机编辑框 */
 	m_leditSort = new QLineEdit(this);														/*!< 分拣台编辑框 */
 	QCheckBox* _cbutAuto = new QCheckBox(QString::fromLocal8Bit("自动生成"), this);			/*!< 自动生成订单号按钮 */
 	m_leditShipment = new QLineEdit(this);													/*!< 出货口编辑框 */
@@ -58,6 +64,8 @@ void OrderForm::Initialize()
 	_hlay->addWidget(_cbutAuto);
 	_hlay->addWidget(_labTray);
 	_hlay->addWidget(m_leditTary);
+	//_hlay->addWidget(_labDischarger);
+	//_hlay->addWidget(m_leditDischarger);
 	_hlay->addWidget(_labSort);
 	_hlay->addWidget(m_leditSort);
 	_hlay->addWidget(_pbutSel);
@@ -77,6 +85,7 @@ void OrderForm::Initialize()
 	// 增加编辑框提示信息
 	m_leditSort->setPlaceholderText(QString::fromLocal8Bit("使用:分割分拣台编号。例如：1:2:3:4。"));
 	m_leditShipment->setPlaceholderText(QString::fromLocal8Bit("仅支持>0并且<255的数字"));
+	//m_leditDischarger->setPlaceholderText(QString::fromLocal8Bit("仅支持>0并且<255的数字"));
 
 	// 设置下拉列表样式
 	//_combShipment->setEditable(true);
@@ -117,6 +126,7 @@ void OrderForm::Initialize()
 	QObject::connect(_cbutAuto, &QCheckBox::toggled, this, &OrderForm::OnClickCheckButton);
 	QObject::connect(m_leditNo, &QLineEdit::editingFinished, this, &OrderForm::EditFinished);
 	QObject::connect(m_leditTary, &QLineEdit::editingFinished, this, &OrderForm::EditFinished);
+	//QObject::connect(m_leditDischarger, &QLineEdit::editingFinished, this, &OrderForm::EditFinished);
 	QObject::connect(m_leditSort, &QLineEdit::editingFinished, this, &OrderForm::EditFinished);
 	QObject::connect(m_leditShipment, &QLineEdit::editingFinished, this, &OrderForm::EditFinished);
 	QObject::connect(m_pbutAdd, &QPushButton::pressed, this, &OrderForm::PressedAddButton);
@@ -170,6 +180,7 @@ void OrderForm::EditFinished()
 {
 	m_strOrder = m_leditNo->text();
 	m_strTray = m_leditTary->text();
+	//m_byDischarger = m_leditDischarger->text().toInt();
 	m_strlSortTable = m_leditSort->text().split(';');
 	m_byShipmentPort = m_leditShipment->text().toInt();
 
@@ -191,6 +202,12 @@ void OrderForm::PressedAddButton()
 		QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！无效的订单编号。"));
 		return;
 	}
+
+	//if (m_byDischarger <= 0 || m_byDischarger >= 255)
+	//{
+	//	QMessageBox::critical(this, QString::fromLocal8Bit("添加订单"), QString::fromLocal8Bit("添加订单失败！无效的分盘机编号。\n注意：编号仅支持大于0且小于255的值。"));
+	//	return;
+	//}
 
 	if (m_strlSortTable.size() == 0)
 	{
@@ -239,6 +256,7 @@ void OrderForm::PressedDeleteButton()
 
 	m_strOrder = m_leditNo->text();
 	m_strTray = m_leditTary->text();
+	//m_byDischarger = m_leditDischarger->text().toInt();
 	m_strlSortTable = m_leditSort->text().split(';');
 	m_byShipmentPort = m_leditShipment->text().toInt();
 
@@ -261,6 +279,7 @@ void OrderForm::OnSelectItem(const QModelIndex& current)
 
 	m_strOrder = m_leditNo->text();
 	m_strTray = m_leditTary->text();
+	//m_byDischarger = m_leditDischarger->text().toInt();
 	m_strlSortTable = m_leditSort->text().split(';');
 	m_byShipmentPort = m_leditShipment->text().toInt();
 

@@ -39,7 +39,6 @@ private:
 	QMap<quint8, Discharger*> m_mapDischarger;
 	QThread m_thread;
 	QTimer m_timer;
-	int m_nCount;
 private:
 	/*!
 	 * @brief 初始化主窗口
@@ -252,4 +251,6 @@ private slots:
 	void slotThread();
 
 	void slotUpdateDischarger(quint8);
+
+	void slotResetDischargerOrder(bool&);
 };

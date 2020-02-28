@@ -9,6 +9,7 @@ DischargerForm::DischargerForm(QWidget* parent)
 	, m_pbutAdd(nullptr)
 	, m_pbutEdit(nullptr)
 	, m_pbutDel(nullptr)
+	, m_pbutReset(nullptr)
 	, m_model(nullptr)
 	, m_byNo(0)
 	, m_strAddr("")
@@ -27,6 +28,7 @@ void DischargerForm::Initialize()
 	m_pbutAdd = new QPushButton(QString::fromLocal8Bit("添加"), this);						/*!< 添加按钮 */
 	m_pbutEdit = new QPushButton(QString::fromLocal8Bit("修改"), this);						/*!< 编辑按钮 */
 	m_pbutDel = new QPushButton(QString::fromLocal8Bit("删除"), this);						/*!< 删除按钮 */
+	m_pbutReset = new QPushButton(QString::fromLocal8Bit("重置订单"), this);				/*!< 重置订单按钮 */
 	QLabel* _labNo = new QLabel(QString::fromLocal8Bit("序号："), this);					/*!< 序号标签 */
 	QLabel* _labAddr = new QLabel(QString::fromLocal8Bit("地址："), this);					/*!< 地址标签 */
 	//QLabel* _labStatus = new QLabel(QString::fromLocal8Bit("状态："), this);				/*!< 状态标签 */
@@ -72,7 +74,7 @@ void DischargerForm::Initialize()
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("模式"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("连接"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("状态"));
-	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("请求"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("待处理订单"));
 
 	_table->setModel(m_model);
 	_table->setSelectionMode(QAbstractItemView::SelectionMode::SingleSelection);
@@ -217,6 +219,26 @@ void DischargerForm::PressedEditButton()
 	}
 
 	EditDischarger(m_byNo, m_strAddr, m_bClient);
+
+	return;
+}
+
+void DischargerForm::PressedResetButton()
+{
+	if (m_byNo <= 0 || m_byNo >= 255)
+	{
+		QMessageBox::critical(this, QString::fromLocal8Bit("重置分盘机订单"), QString::fromLocal8Bit("重置分盘机订单失败！无效的分盘机编号。\n注意：编号仅支持大于0且小于255的值。"));
+		return;
+	}
+
+	bool _result = false;
+
+	emit ResetDischargerOrder(_result);
+
+	if (_result == false)
+	{
+		return;
+	}
 
 	return;
 }
@@ -483,23 +505,23 @@ void DischargerForm::Update(quint8 no, bool request, QString order)
 			continue;
 		}
 
-		QString _str = "";
+		QString _str = order;
 
-		if (request == false)
-		{
-			if (order.isNull() || order.isEmpty())
-			{
-				_str = QString::fromLocal8Bit("未请求");
-			}
-			else
-			{
-				_str = QString::fromLocal8Bit("正在发送请求(%1)").arg(order);
-			}
-		}
-		else
-		{
-			_str = QString::fromLocal8Bit("已收到回复(%1)").arg(order);
-		}
+		//if (request == false)
+		//{
+		//	if (order.isNull() || order.isEmpty())
+		//	{
+		//		_str = QString::fromLocal8Bit("未请求");
+		//	}
+		//	else
+		//	{
+		//		_str = QString::fromLocal8Bit("正在发送请求(%1)").arg(order);
+		//	}
+		//}
+		//else
+		//{
+		//	_str = QString::fromLocal8Bit("已收到回复(%1)").arg(order);
+		//}
 
 		m_model->item(i, 5)->setText(_str);
 	}
@@ -520,7 +542,7 @@ void DischargerForm::Clear()
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("模式"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("连接"));
 	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("状态"));
-	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("请求"));
+	m_model->setHeaderData(_index++, Qt::Horizontal, QString::fromLocal8Bit("待处理订单"));
 
 	return;
 }
