@@ -43,12 +43,12 @@ void WCSSimulator::Initialize()
 	// 读取配置信息
 	QString _srvAddr = "", _dbHost = "", _dbName = "", _dbUser = "", _dbPwd = "";
 
-	QFile _fileSrvConfig("Config/Config.ini");
+	QFile _fileConfig("Config/Config.ini");
 
 	// 清空文件中的数据，若没有文件，则创建文件 并打开文件
-	if (_fileSrvConfig.open(QIODevice::ReadOnly | QIODevice::Text))
+	if (_fileConfig.open(QIODevice::ReadOnly | QIODevice::Text))
 	{
-		QJsonDocument _jdoc = QJsonDocument::fromJson(_fileSrvConfig.readAll());
+		QJsonDocument _jdoc = QJsonDocument::fromJson(_fileConfig.readAll());
 		QJsonObject _jobjRoot = _jdoc.object();
 
 		QJsonObject _jobjSrv = _jobjRoot.value("Server").toObject();
@@ -59,6 +59,8 @@ void WCSSimulator::Initialize()
 		_dbName = _jobjDb.value("DatabaseName").toString();
 		_dbUser = _jobjDb.value("User").toString();
 		_dbPwd = _jobjDb.value("Password").toString();
+
+		_fileConfig.close();
 	}
 
 	// 初始化子控件
